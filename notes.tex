@@ -32,23 +32,64 @@
 \begin{multicols}{2}
 
 \section{Image Processing}
+
+In this section we outline methods that can be used to modify images. For our purposes we only concern ourselves with grayscale images. For color images, we can apply the same methods after transforming the color space into one that has separatable luminance and chrominance components (ex. YCbCr).
+
 \subsection{Histogram Transformations}
+
+An image histogram is constructed by the frequncies of pixel intensities. By modifying pixel intensities on a histogram-level we can alter and often improve the quality of images. We outline two methods below:
+
 \subsubsection{Linear Stretching}
+
+Sometimes the image histogram may only be occupying part of the intensity range (ex. mostly dark pixels or mostly light pixels). As a result, the image would have bad contrast.
+
+One way to address this issue is to stretch the histogram so that it occupies the entire intensity range. To do this, we mark the top and bottom of the histogram (\texttt{a} and \texttt{b}, respectively) and for each pixel in the histogram, compute a proportion of where it stands between \texttt{a} and \texttt{b}. Based on these proportios, the histogram is then re-mapped to occupy the entire intensity range.
+
+The algorithm is as follows. \texttt{p\_0} and \texttt{p\_m} are the minimum and maximum pixel intensities respectively.
+
+\begin{verbatim}
+function linear_stretch (img, a, b, p_0, p_m)
+  for pix in img:
+    if     pix <= a: pix = p_0
+    elseif pix >= b: pix = p_m
+    else:  pix = (p_m-p_0)/(b-a)*(pix-a)+p_0
+end
+\end{verbatim}
+
+One quick note is that we can set \texttt{a} and \texttt{b} to not be the max and min of the histogram, which then makes some pixels clip to the min or max.
+
 \subsubsection{Histogram Equalization}
+
+Histogram Equalization is another popular method that is often used for improving the constrast of the messages. The idea of Histogram Equalization is to transform the intensity histogram to be a uniform histgram. In practice, the resulting histogram will not be perfectly uniform. As a matter of fact, for dense peaks in the original histogram, the resulting equalized histogram will have discontinuities in that area.
+
+By spacing out pixel intensities, regions in the image where there are lots of detail but only represented with a few intensities become easier to process.
+
+The algorithm is as follows. \texttt{hist} is the original histogram of the image, and \texttt{n\_factor} is the ratio between amount of pixels in the image and the levels of pixel intensities.
+
+\begin{verbatim}
+function hist_eq (img, hist, n_factor)
+  for pix in img:
+    pix = ceil(sum(hist[:p])/n_factor) - 1
+end
+\end{verbatim}
+
 \subsection{Convolution and Filtering}
 % overview of frequency analysis
 % low pass vs high pass filtering
 % mask design
 % Applying 2D Mask vs 1D Mask
 % linear and shift invariance
+
 \subsection{Smoothing}
 \subsubsection{Unweighted Averaging}
 \subsubsection{K-nearest Neighbor Averaging}
 \subsubsection{Median Filtering}
 \subsubsection{Gaussian Filtering}
+
 \subsection{Sharpening}
 \subsubsection{Laplacian-based Methods}
 \subsubsection{Unsharp Masking}
+
 \subsection{Image Moments}
 
 \section{Template Matching}
@@ -65,13 +106,13 @@
 \subsection{Canny Edge Operator}
 % criterion for good edge detection
 % 5 stages of Canny Edge Operator
-% \begin{enumerate}
-%         \item Smoothing
-%         \item Gradient Operator
-%         \item Non-maximum Suppresion
-%         \item Double Thresholding
-%         \item Hysteresis Tracking
-% \end{enumerate}
+\begin{enumerate}
+        \item Smoothing
+        \item Gradient Operator
+        \item Non-maximum Suppresion
+        \item Double Thresholding
+        \item Hysteresis Tracking
+\end{enumerate}
 
 \section{Regions and Segmentation}
 
