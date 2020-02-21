@@ -1,4 +1,5 @@
 \documentclass{article}
+\usepackage{amsmath}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=0.75in]{geometry} % lots more margin
 \pagenumbering{gobble} % ignore page numbers
@@ -64,7 +65,7 @@ Histogram Equalization is another popular method that is often used for improvin
 
 By spacing out pixel intensities, regions in the image where there are lots of detail but only represented with a few intensities become easier to process.
 
-The algorithm is as follows. \texttt{hist} is the original histogram of the image, and \texttt{n\_factor} is the ratio between amount of pixels in the image and the levels of pixel intensities.
+The algorithm is as follows. \texttt{hist} is the original histogram of the image, and \texttt{n\_factor} is the ratio between amount of pixels in the image and the levels of pixel intensities. 
 
 \begin{verbatim}
 function hist_eq (img, hist, n_factor)
@@ -73,21 +74,72 @@ function hist_eq (img, hist, n_factor)
 end
 \end{verbatim}
 
-\subsection{Convolution and Filtering}
+\subsection{Convolution and Filtering} 
 % overview of frequency analysis
 % low pass vs high pass filtering
 % mask design
 % Applying 2D Mask vs 1D Mask
 % linear and shift invariance
 
+Convolution is an integral that represents the overlap of one function t as it is shifted over another function f.
+
+\[q(x,y) = \int \int_{-\infty}^{\infty} f(x-x', y-y') \cdot t(x',y') dx'dy'\]
+\[f * t\]
+
+In terms of image processing, convolution is adding each element in a matrix to its local neighbours, weighted by the convolution mask. The convolution mask is a small matrix that is applied to an image matrix to perform blurring, sharpening, etc.
+
+Filtering helps remove either unwanted high frequencies or low frequencies, through the use of low-pass filters and high-pass filters.
+
 \subsection{Smoothing}
+
+Smoothing an image is removing the noise from the image. While smoothing will remove noise, it will also remove the sharpness of the image, resulting in a blurred effect.
+
 \subsubsection{Unweighted Averaging}
+
+
+
 \subsubsection{K-nearest Neighbor Averaging}
+
+
+
 \subsubsection{Median Filtering}
+
+Median filtering involves taking the average value within a window as the new value.
+
+%put matrix example here
+
+A pro of this method is being able to remove noise while keeping the sharpness of the edges. However, this method is nonlinear, and corners are lost.
+
+%put example of nonlinearity and way to mitigate corner loss
+
 \subsubsection{Gaussian Filtering}
 
+Gaussian filtering blurs the image to remove noise. It is still a Gaussian, even after performing multiplication, convolution, and/or Fourier transform. It is a "low-pass" filter that removes unwanted high frequencies. The larger $\sigma$ is, the lower $\sigma_f$ is, which gives a lower cut-off frequency.
+%equation of sigma * sigmaf = 1/2pi
+
 \subsection{Sharpening}
+
+Sharpening, also known as "deblurring", is where a blurred version of the image is subtracted from the original f. This removes the blurred portions of the image and leaves behind the sharpened bits.
+
+\[\hat{f}(x,y) = f(x,y) - \nabla^{2}f(x,y)=\]
+\[5*f(x,y)-[f(x+1,y)+f(x-1,y)+f(x,y+1)+f(x,y-1)]\]
+
+\[
+\begin{matrix}
+  0 & -1 & 0\\
+  -1 & 5 & -1\\
+  0 & -1 & 0
+\end{matrix}
+\]
+
+%insert the example from class
+%discuss how the f hat is f minus its second derivative
+
+There can be different variations of sharpening, where we apply different weights, \(w\)
+\[\hat{f}(x,y) = f(x,y) - w * \nabla^{2}f(x,y)\]
+
 \subsubsection{Laplacian-based Methods}
+
 \subsubsection{Unsharp Masking}
 
 \subsection{Image Moments}
@@ -96,25 +148,195 @@ end
 % cross correlation vs convolution, how it doesn't matter in cv
 
 \section{Edge Detection}
+
+Edges are intensity discontinuities in images. Edge operators detect the presence of local edges.
+
 \subsection{Gradient-Based Methods}
+
+
+
 \subsubsection{Gradient Thresholding}
+
+$s = \sqrt{I_x^2 + I_y^2}$
+
+$\theta = arctan(I_y/I_x)$
+
+s is the magnitude, and $\theta$ is the direction.
+
 \subsubsection{Roberts Operator}
+
+        \[
+          \begin{bmatrix}
+            0 & 1\\
+            -1 & 0
+          \end{bmatrix}\quad
+          \begin{bmatrix}
+            1 & 0\\
+            0 & -1
+          \end{bmatrix}
+        \]
+        \[
+          \begin{matrix}
+            \Delta_1
+          \end{matrix}\quad
+          \begin{matrix}
+            \Delta_2
+          \end{matrix}
+        \]
+\[s = \mid\Delta_1\mid + \mid\Delta_2\mid\]
+
 \subsubsection{Prewitt and Sobel Operators}
+
+Prewitt uses 8 operators
+
+        \[
+          \begin{bmatrix}
+            -1 & 0 & 1\\
+            -1 & 0 & 1\\
+            -1 & 0 & 1
+          \end{bmatrix}\quad
+          \begin{bmatrix}
+            0 & 1 & 1\\
+            -1 & 0 & 1\\
+            -1 & -1 & 0
+          \end{bmatrix}
+        \]
+etc.
+
+(The first one is for 0\textdegree and the second one is for 45\textdegree)
+
+Pros of this method include providing directional information and using local averages to reduce noise. However, the edge width is greater than 1, which means there isn't a single input.
+
+Sobel is similar to Prewitt, and also uses 8 operators.
+
+        \[
+          \begin{bmatrix}
+            -1 & 0 & 1\\
+            -2 & 0 & 2\\
+            -1 & 0 & 1
+          \end{bmatrix}\quad
+          \begin{bmatrix}
+            0 & 1 & 2\\
+            -1 & 0 & 1\\
+            -2 & -1 & 0
+          \end{bmatrix}
+        \]
+etc.
+
+(The first one is for 0\textdegree and the second one is for 45\textdegree)
+
 \subsection{Laplacian-Based Methods}
 % log vs dog
+
+\begin{itemize}
+  \item {LOG (Laplacian of Gaussian)}
+  
+  Mark zero crossings (where the values are zero)
+  \item {DOG (Difference of Gaussians)}
+  
+  Can change $\sigma$ of a Gaussian to find edges with different spatial frequencies
+  LOG can be approximated with DOG
+\end{itemize}
+
 \subsection{Marr's Edge Operator}
+
+Given an image f(x,y), edges can be found by locating the zero crossings from \(D^2(G(x,y)*f(x,y))\), where G is a Gaussian function and $D^2$ is the second derivative.
+Derivative rule for convolution: \(D^2(G*f) = D^2G * f\).
+
 \subsection{Canny Edge Operator}
+
+\subsubsection{Criteria for Good Edge Detection}
+\begin{itemize}
+      \item Always find real edges, not false ones
+  
+      \item Good localization, where found edges are as close to the original as possible
+  
+      \item Unique Output
+\end{itemize}
+
 % criterion for good edge detection
 % 5 stages of Canny Edge Operator
 \begin{enumerate}
-        \item Smoothing
-        \item Gradient Operator
-        \item Non-maximum Suppresion
-        \item Double Thresholding
-        \item Hysteresis Tracking
+        \item \textbf{Smoothing}
+        
+        Use Gaussian I * G, where I is the image matrix and G is the Gaussian mask
+        \item \textbf{Gradient Operator}
+        
+        Use the horizontal and vertical Sobel operators to generate the x and y derivatives of the image function.
+        By applying filters from both the horizontal and vertical directions, the gradient calculation can accurately determine the intensity of edges.
+
+        \[
+          \begin{bmatrix}
+            -1 & 0 & 1\\
+            -2 & 0 & 2\\
+            -1 & 0 & 1
+          \end{bmatrix}\quad
+          \begin{bmatrix}
+            1 & 2 & 1\\
+            0 & 0 & 0\\
+            -1 & -2 & -1
+          \end{bmatrix}
+        \]
+
+        Use the derivatives to determine the magnitude and $\theta$ of the image.
+        
+        $s = \sqrt{I_x^2 + I_y^2}$
+
+        $I_x$ and $I_y$ are the images after applying the Sobel filters, and s is the magnitude.
+
+        $\theta = arctan(I_y/I_x)$
+
+        \item \textbf{Non-maximum Suppression}
+        
+        Non-maximum suppression thins out the edges that result from the gradient operator.
+        The algorithm goes through all the elements of the gradient intensity matrix and finds pixels with the maximum value in the edge directions.
+
+        \item \textbf{Double Thresholding}
+        
+        Double thresholding determines the strength of each pixel, whether it's weak, strong, or irrelevant.
+        There are two thresholds, a high threshold to determine the strong pixels and a low threshold to filter out the irrelevant pixels.
+        Strong pixels are included in the final image, and weak pixels have to be filtered through again to see whether or not they are strong or discarded.
+        
+        \item \textbf{Hysteresis Tracking}
+        
+        This is used to determine if weak pixels are going to be transformed into strong pixels and included in the final edge map.
+        If a weak pixel has at least one pixel surrounding it that is strong, then it is turned into a strong pixel.
 \end{enumerate}
 
 \section{Regions and Segmentation}
+
+A region is a group of connected pixels with similar properties in an image.
+\subsection{Image Segmentation}
+
+Image segmentation is where the image is divided into regions. It can be region-based, edge-based, or a combination of both.
+Different Methods of Image Segmentation:
+\begin{enumerate}
+  \item {Thresholding}
+  \item {Blob colouring (for binary images)}
+  \item {Split and Merge}
+  \item {K-Means}
+  \item {Mean Shift}
+\end{enumerate}
+
+\subsection{Gestalt Psychology and Human Perception}
+
+Grouping is the key to visual perception. 
+
+\begin{itemize}
+  \item {Proximity}
+  \item {Similarity}
+  \item {Common Fate}
+  
+  Items that have similar motion.
+  \item {Common Region}
+  \item {Parallelism}
+  \item {Symmetry}
+  \item {Continuity}
+  \item {Closure}
+  \item {Familiar Shapes}
+\end{itemize}
+
+An image can be separated into a figure and a ground.
 
 \section{Texture Analysis}
 \subsection{Statistical Methods}
