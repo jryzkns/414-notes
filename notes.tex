@@ -38,7 +38,7 @@ In this section we outline methods that can be used to modify images. For our pu
 
 \subsection{Histogram Transformations}
 
-An image histogram is constructed by the frequncies of pixel intensities. By modifying pixel intensities on a histogram-level we can alter and often improve the quality of images. We outline two methods below:
+An image histogram is constructed by the frequencies of pixel intensities. By modifying pixel intensities on a histogram-level we can alter and often improve the quality of images. We outline two methods below:
 
 \subsubsection{Linear Stretching}
 
@@ -90,32 +90,104 @@ In terms of image processing, convolution is adding each element in a matrix to 
 
 Filtering helps remove either unwanted high frequencies or low frequencies, through the use of low-pass filters and high-pass filters.
 
+The discrete case of convolution is as follows:
+
+\[g(x) = \Sigma_{x'=-M}^{M} f(x-x') \cdot t(x')\]
+
+2D masks can be composed from two 1D masks.
+
+$\begin{pmatrix}
+  \frac{1}{4} & \frac{1}{2} & \frac{1}{4}
+\end{pmatrix}$
+$\bigotimes$
+$\begin{pmatrix}
+  \frac{1}{4}\\
+  \frac{1}{2}\\
+  \frac{1}{4}
+\end{pmatrix}$
+=
+$\begin{pmatrix}
+  \frac{1}{16} & \frac{1}{8} & \frac{1}{16}\\
+  \frac{1}{8} & \frac{1}{4} & \frac{1}{8}\\
+  \frac{1}{16} & \frac{1}{8} & \frac{1}{16}
+\end{pmatrix}$
+
+According to the Associative Law for convolution, $(\vec I \bigotimes \vec m_1) \bigotimes \vec m_{1}^{T} = \vec I \bigotimes (\vec m_1 \bigotimes \vec m_{1}^{T})$
+
+The runtime analysis for the left hand side is $O(\mid \vec m_1 \mid)$, and the runtime analysis for the right hand side is $O(\mid \vec m_1 \mid^2)$. $\mid \vec m_1 \mid$ is the size of $\vec m_1$.
+
+A shift invariant system is the discrete equivalent of a time invariant system. If y(n) is the response of the system to x(n), then y(n-k) is the response of the system x(n-k).
+
+Given two valid outputs, $x_1(t)$ and $x_2(t)$, as well as their outputs, $y_1(t) = H{x_1(t)}$ and $y_2(t) = H{x_2(t)}$, then a linear system must satisfy $\alpha y_1(t) + \beta y_2(t) = H{\alpha x_1(t) + \beta x_2(t)}$.
+
 \subsection{Smoothing}
 
 Smoothing an image is removing the noise from the image. While smoothing will remove noise, it will also remove the sharpness of the image, resulting in a blurred effect.
 
 \subsubsection{Unweighted Averaging}
 
+$t(x',y') =$
+$\begin{pmatrix}
+  \frac{1}{9} & \frac{1}{9} & \frac{1}{9}\\
+  \frac{1}{9} & \frac{1}{9} & \frac{1}{9}\\
+  \frac{1}{9} & \frac{1}{9} & \frac{1}{9}
+\end{pmatrix}$
 
+For example,
+$f = $
+$\begin{pmatrix}
+  0 & 0 & 0 & 0 & 0\\
+  0 & 0 & 0 & 0 & 0\\
+  0 & 9 & 9 & 9 & 0\\
+  0 & 0 & 0 & 0 & 0\\
+  0 & 0 & 0 & 0 & 0\\
+\end{pmatrix}$
+
+The output
+$f * t =$
+$\begin{pmatrix}
+  0 & 0 & 0 & 0 & 0\\
+  1 & 2 & 3 & 2 & 1\\
+  1 & 2 & 3 & 2 & 1\\
+  1 & 2 & 3 & 2 & 1\\
+  0 & 0 & 0 & 0 & 0\\
+\end{pmatrix}$
+
+Pros of this method is that it is a linear operator and reduces noise. The con is that it blurs the image.
 
 \subsubsection{K-nearest Neighbor Averaging}
 
-
+This method involves averaging the K neighbors that have the "nearest" intesity values. This method is edge preserving.
 
 \subsubsection{Median Filtering}
 
 Median filtering involves taking the average value within a window as the new value.
 
-%put matrix example here
+$f = $
+$\begin{pmatrix}
+  0 & 0 & 0 & 0 & 0 & 0\\
+  0 & 9 & 9 & 9 & 9 & 0\\
+  0 & 9 & 9 & 9 & 9 & 0\\
+  0 & 9 & 9 & 9 & 9 & 0\\
+  0 & 0 & 0 & 0 & 0 & 0\\
+\end{pmatrix}$
 
-A pro of this method is being able to remove noise while keeping the sharpness of the edges. However, this method is nonlinear, and corners are lost.
+The output
+$f' = $
+$\begin{pmatrix}
+  0 & 0 & 0 & 0 & 0 & 0\\
+  0 & 0 & 9 & 9 & 0 & 0\\
+  0 & 9 & 9 & 9 & 9 & 0\\
+  0 & 0 & 9 & 9 & 0 & 0\\
+  0 & 0 & 0 & 0 & 0 & 0\\
+\end{pmatrix}$
 
-%put example of nonlinearity and way to mitigate corner loss
+A pro of this method is being able to remove noise while keeping the sharpness of the edges. However, this method is nonlinear, and corners are lost. To mitigate the loss of corners, you could use a different sample set, in a cross shape.
 
 \subsubsection{Gaussian Filtering}
 
 Gaussian filtering blurs the image to remove noise. It is still a Gaussian, even after performing multiplication, convolution, and/or Fourier transform. It is a "low-pass" filter that removes unwanted high frequencies. The larger $\sigma$ is, the lower $\sigma_f$ is, which gives a lower cut-off frequency.
-%equation of sigma * sigmaf = 1/2pi
+\[\sigma \cdot \sigma_f = \frac{1}{2\pi}\]
 
 \subsection{Sharpening}
 
@@ -125,27 +197,83 @@ Sharpening, also known as "deblurring", is where a blurred version of the image 
 \[5*f(x,y)-[f(x+1,y)+f(x-1,y)+f(x,y+1)+f(x,y-1)]\]
 
 \[
-\begin{matrix}
+\begin{bmatrix}
   0 & -1 & 0\\
   -1 & 5 & -1\\
   0 & -1 & 0
-\end{matrix}
+\end{bmatrix}
 \]
-
-%insert the example from class
-%discuss how the f hat is f minus its second derivative
 
 There can be different variations of sharpening, where we apply different weights, \(w\)
 \[\hat{f}(x,y) = f(x,y) - w * \nabla^{2}f(x,y)\]
 
 \subsubsection{Laplacian-based Methods}
 
+The Laplacian (2nd derivative) operator is an approximation to the Laplacian $\frac{\partial^2f}{\partial x^2} + \frac{\partial^2f}{\partial y^2}$.
+
+$\frac{\partial^2f}{\partial x^2} = f(x+1,y) - f(x,y) - (f(x,y) - f(x-1,y))$
+
+$\frac{\partial^2f}{\partial y^2} = f(x,y+1) - f(x,y) - (f(x,y) - f(x,y-1))$
+
+$\nabla^2 f(x,y) = \frac{\partial^2f}{\partial x^2} + \frac{\partial^2f}{\partial y^2} = f(x+1,y) + f(x-1,y) + f(x,y+1) + f(x,y-1) - 4 \cdot f(x,y)$
+
+The Laplacian operator is either:
+$
+\begin{bmatrix}
+  0 & 1 & 0\\
+  1 & -4 & 1\\
+  0 & 1 & 0
+\end{bmatrix}
+$
+or
+$
+\begin{bmatrix}
+  0 & -1 & 0\\
+  -1 & 4 & -1\\
+  0 & -1 & 0
+\end{bmatrix}
+$
+
+Some cons of this method is that the directional information is not presented, and it enhances the noise. Zero crossings in the 2nd derivative correspond with edges.
+
 \subsubsection{Unsharp Masking}
+
+
 
 \subsection{Image Moments}
 
+The (p,q)$^{th}$ order moment of f(x,y) is:
+$m(p,q) = \int \int x^p \cdot y^q \cdot f(x,y) dxdy$
+and in discrete form:
+$m_{pq} = \Sigma_x \Sigma_y x^p y^q \cdot f(x,y)$.
+
+A segmented image can be represented by a binary image B[i,j] in which "1" could represent, for example, the foreground pixels.
+
+0th order moment: Area A = $\Sigma_i \Sigma_j B[i,j]$
+1st order moment: centroid
+$\bar x = \frac{\Sigma_i \Sigma_j j \cdot B[i,j]}{A}$,
+$\bar y = \frac{\Sigma_i \Sigma_j i \cdot B[i,j]}{A}$
+
+Axis of least 2nd moment is the access of elongation(orientation) for 2D regions.
+
 \section{Template Matching}
 % cross correlation vs convolution, how it doesn't matter in cv
+
+Similarity between image $f(\vec p)$ and a template $t(\vec p)$ can be measured by a square of the Euclidean distance:
+
+$d^2(\vec q) = \Sigma_{\vec p}[f(\vec p + \vec q) - t(\vec p)]^2$
+where $\Sigma_{\vec p}$ means $\Sigma_{x = -M}^M \Sigma_{y = -N}^N$. If $t(\vec p)$ and $f(\vec p)$ match perfectly, then $d^2(\vec q) = 0$.
+
+Expand it to get:
+$d^2(\vec q) = \Sigma_{\vec p}[f^2(\vec p + \vec q) - 2 \cdot f(\vec p + \vec q) \cdot t(\vec p) + t^2(\vec p)]$
+
+Since $f^2(\vec p + \vec q)$ is independent from t, and $t^2(\vec p)$ is a constant, then, to minimize $d^2(\vec q)$, we only need to focus on maximizing $\Sigma_{\vec p} f(\vec p + \vec q) \cdot t(\vec p)$.
+
+Cross Correlation: $R_{ft}(\vec q) = \Sigma_{\vec p} f(\vec p + \vec q) \cdot t(\vec p)$ or $R_{ft}(x, y) = \Sigma_{x = -M}^M \Sigma_{y = -N}^N f(x+x', y+y') \cdot t(x',y')$
+
+The above definition is not invariant to the magnitue of f. A normalized $R_{ft}$ is needed.
+
+$$R_{ft} = \frac{\Sigma_{x'} \Sigma_{y'} f(x+x', y+y') \cdot t(x',y')}{\sqrt{\Sigma_{x'} \Sigma_{y'}(f(x+x', y+y'))^2 \cdot \Sigma_{x'} \Sigma_{y'}(t(x',y'))^2}}$$
 
 \section{Edge Detection}
 
@@ -153,15 +281,18 @@ Edges are intensity discontinuities in images. Edge operators detect the presenc
 
 \subsection{Gradient-Based Methods}
 
-
-
 \subsubsection{Gradient Thresholding}
 
-$s = \sqrt{I_x^2 + I_y^2}$
+$(\partial f/\partial x) = f(x+n, y) - f(x,y)$
 
-$\theta = arctan(I_y/I_x)$
+$(\partial f/\partial y) = f(x, y+n) - f(x,y)$
+
+$s = \sqrt{(\partial f/\partial x)^2 + (\partial f/\partial y)^2}$
+
+$\theta = arctan((\partial f/\partial y)^2/(\partial f/\partial x)^2)$
 
 s is the magnitude, and $\theta$ is the direction.
+If the magnitude is greater than a threshold t, then it is an edge, and an edge map can be generated.
 
 \subsubsection{Roberts Operator}
 
@@ -339,12 +470,129 @@ Grouping is the key to visual perception.
 An image can be separated into a figure and a ground.
 
 \section{Texture Analysis}
+
+Texture is repeated patterns of local intensity variations, and it depends on the image resolution.
+There are three issues related to texture analysis:
+
+\begin{itemize}
+  \item {texture classification}
+  \item {texture segmentation}
+  \item {shape from texture}
+\end{itemize}
+
 \subsection{Statistical Methods}
+
 \subsubsection{Spatial Gray Level Dependence Method}
+
+Define a gray level co-occurrence matrix. A gray level co-occurrence matrix is a matrix that contains information about the positions of pixels having similar gray level values.
+
+  \[
+    \begin{bmatrix}
+      2 & 1 & 2 & 0 & 1\\
+      0 & 2 & 1 & 1 & 2\\
+      0 & 1 & 2 & 2 & 0\\
+      1 & 2 & 2 & 0 & 1\\
+      2 & 0 & 1 & 0 & 1
+    \end{bmatrix}
+  \]
+
+This is the matrix of a 5 x 5 image with 3 gray levels.
+
+1/16 * 
+\(
+  \begin{bmatrix}
+    0 & 2 & 2\\
+    2 & 1 & 2\\
+    2 & 3 & 2
+  \end{bmatrix}
+  \)
+  
+  This is the gray level co-occurrence matrix for d = (1,1). The indices i are for the rows (0,1,2), and j are for the columns (0,1,2). This array is called P(i,j).
+  The algorithm for constructing a gray level co-occurrence matrix is counting all the pairs of pixels in which the first pixel has value i, and its matching pair displaced from first pixel by d has a value of j.
+
+  \[Entropy = -\Sigma_i \Sigma_j P[i,j]logP[i,j]\]
+
+  Entropy is the level of randomness in the data that is being processed. Entropy is highest when all the elements in P[i,j] are the same. In terms of images, this means that there is no preferred gray level.
+  
+  \[Energy = \Sigma_i \Sigma_j P^2[i,j]\]
+
+  \[Contrast = \Sigma_i \Sigma_j (i-j)^2 P[i,j]\]
+
+  Contrast is a measure of the local variations in an image. If there is a large amount of variation,
+  the P[i,j]'s will be concentrated away from the main diagonal and the contrast will be high.
+
+  \[Homogeneity = \Sigma_i \Sigma_j \!\frac{P[i,j]}{1+\mid i-j \mid}\]
+
+  Homogenous images result in a co-occurrence matrix with a combination of high and low P[i,j]'s. If the range of gray levels is small, then P[i,j] will be concentrated along the main diagonal.
+
+  P[i,j] is not symmetric, since the number of pixels having gray levels [i,j] does not necessarily equal the number of pixels with gray levels [j,i].
+  Elements of P[i,j] is normalized by 1/16, where 16 is the number of pixel pairs.
+  The normalized P[i,j] is treated as a probability mass function because $\Sigma_i,j P[i,j] = 1$.
+
+  Negatives of this method is that many d's have to be tried before arriving at a good one, and it's not good for textures that are composed of primitives of a certain shape/structure.
+
 \subsubsection{Gray Level Run Length Method}
 % 5 texture measures
+Define gray level run matrix $P_\theta$, where $P_\theta(i,j)$ is the number of times an image contains a run of length j for pixels with value i in a certain direction of $\theta$.
+Long runs can be expected for images with coarse texture.
+
+\[T_\theta = \Sigma_{i=1} ^{N_g} \Sigma_{j=1} ^{N_r} P_\theta(i,j)\]
+where $N_g$ is the number of gray levels and $N_r$ is the number of run lengths
+
+\begin{enumerate}
+  \item {Short run emphasis inverse moments}
+  
+  \[\frac{1}{T_\theta} \cdot \Sigma_{i=1} ^{N_g} \Sigma_{j=1} ^{N_r} \frac{P_\theta (i,j)}{j^2}\]
+
+  This measure emphasizes short runs of a gray level image. Short run emphasis is large when there are lots of short runs of the same intensity.
+
+  \item {Long run emphasis moments}
+  
+  \[\frac{1}{T_\theta} \cdot \Sigma_{i=1} ^{N_g} \Sigma_{j=1} ^{N_r} j^2 \cdot P_\theta (i,j)\]
+
+  This measure emphasizes long runs of a gray level image. Long run emphasis is large when there are lots of long runs of the same intensity.
+
+  \item {Gray level nonuniformity}
+  
+  \[\frac{1}{T_\theta} \cdot \Sigma_{i=1} ^{N_g} (\Sigma_{j=1} ^{N_r} P_\theta (i,j))^2\]
+
+  The sum inside of the brackets is the total number of runs for a certain gray level value. This value is large if the runs are not evenly distributed across different intensities.
+
+  \item {Run length nonuniformity}
+  
+  \[\frac{1}{T_\theta} \cdot \Sigma_{j=1} ^{N_r} (\Sigma_{i=1} ^{N_g} P_\theta (i,j))^2\]
+
+  The sum inside the brackets is the total number of runs with a certain run length at a certain gray level.
+
+  \item {Inverse of weighted average run length}
+  
+\[\frac{T_\theta}{\Sigma_{i=1} ^{N_g} \Sigma_{j=1} ^{N_r} j \cdot P_\theta (i,j)}\]
+
+This measure puts more weight into longer run length.
+
+\end{enumerate}
+
+Use these 5 measures in each of the 4 directions. For these textures (swamp, lake, railroad, orchard, scrub, suburb), the measures have 83$\%$ accuracy.
+
 \subsection{Structural Methods}
+
+Textures are composed of primitives known as "texels".
+
+\begin{itemize}
+  \item {Works better than statistical methods if the primitives can be detected}
+  \item {Geometric properties (size, elongation, orientation, etc.) of the primitives are important features}
+  \item {Spatial relationship of the primitives based on the co-occurrence of these primitives can be further explored}
+\end{itemize}
+
+For example, if we use an edge-based method, then the primitives are edges, the properties are orientation, gradient, and density, and the spatial relationship is edge separations.
+
 \subsubsection{Tamura's Texture Measures}
+
+\begin{itemize}
+  \item {Coarseness}
+  \item {Contrast}
+  \item {Directionality}
+\end{itemize}
 
 % \section{Classical Hough Transform}
 
