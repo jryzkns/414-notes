@@ -602,7 +602,19 @@ For example, if we use an edge-based method, then the primitives are edges, the 
  \section{Representations of 2D Geometric Structures}
  \subsection{Boundary Representations}
  \subsubsection{Polyline}
+
+  Polyline can be used to apporximate curves and contours accurately.
+  
+  The algorithm for curve approximation using polyline involves iteratively going through vertices, and adding new vertices if the maximum distance between the polyline and the shape is greater than $T_{max}$.
+
+  For closed polylines, such as polygon, the area is $\frac{1}{2}\Sigma_{i=0}^{n-1}(x_{i+1}y_i + x_iy_{i+1})$.
+
  \subsubsection{Chain Code}
+
+  Chain code is an economic coding method that has either 4 or 8 neighbours.
+
+  
+
  \subsubsection{Curvature Scale Space (CSS)}
 
  \subsection{Region Representations}
