@@ -25,6 +25,7 @@
 \usepackage{caption}
 \usepackage{subfigure}
 \usepackage{multicol}
+\usepackage{float}
 
 \begin{document}
 
@@ -38,13 +39,13 @@ In this section we outline methods that can be used to modify images. For our pu
 
 \subsection{Histogram Transformations}
 
-An image histogram is constructed by the frequencies of pixel intensities. By modifying pixel intensities on a histogram-level we can alter and often improve the quality of images. We outline two methods below:
+An image histogram is constructed by the frequencies of pixel intensities. By modifying pixel intensities on a histogram-level we can alter and often improve the quality of images. The transformations are applied to the image histogram, but changes in histogram values reflect the mapping of pixel values in the image. We outline two methods below:
 
 \subsubsection{Linear Stretching}
 
 Sometimes the image histogram may only be occupying part of the intensity range (ex. mostly dark pixels or mostly light pixels). As a result, the image would have bad contrast.
 
-One way to address this issue is to stretch the histogram so that it occupies the entire intensity range. To do this, we mark the top and bottom of the histogram (\texttt{a} and \texttt{b}, respectively) and for each pixel in the histogram, compute a proportion of where it stands between \texttt{a} and \texttt{b}. Based on these proportios, the histogram is then re-mapped to occupy the entire intensity range.
+One way to address this issue is to stretch the histogram so that it occupies the entire intensity range. To do this, we mark the top and bottom of the histogram (\texttt{a} and \texttt{b}, respectively) and for each pixel in the histogram, compute a proportion of where it stands between \texttt{a} and \texttt{b}. Based on these proportions, the histogram is then mapped to occupy the entire intensity range.
 
 The algorithm is as follows. \texttt{p\_0} and \texttt{p\_m} are the minimum and maximum pixel intensities respectively.
 
@@ -61,11 +62,11 @@ One quick note is that we can set \texttt{a} and \texttt{b} to not be the max an
 
 \subsubsection{Histogram Equalization}
 
-Histogram Equalization is another popular method that is often used for improving the constrast of the messages. The idea of Histogram Equalization is to transform the intensity histogram to be a uniform histgram. In practice, the resulting histogram will not be perfectly uniform. As a matter of fact, for dense peaks in the original histogram, the resulting equalized histogram will have discontinuities in that area.
+Histogram Equalization is another popular method that is often used for improving the constrast of the messages. The idea of Histogram Equalization is to transform the intensity histogram to be a uniform histogram. In practice, the resulting histogram will not be perfectly uniform. 
 
-By spacing out pixel intensities, regions in the image where there are lots of detail but only represented with a few intensities become easier to process.
+In essence: by spacing out pixel intensities, regions in the image where there are lots of detail but only represented with a few intensities become easier to process.
 
-The algorithm is as follows. \texttt{hist} is the original histogram of the image, and \texttt{n\_factor} is the ratio between amount of pixels in the image and the levels of pixel intensities. 
+The algorithm is as follows: \texttt{hist} is the original histogram of the image, and \texttt{n\_factor} is the ratio between amount of pixels in the image and the levels of pixel intensities.
 
 \begin{verbatim}
 function hist_eq (img, hist, n_factor)
@@ -74,300 +75,298 @@ function hist_eq (img, hist, n_factor)
 end
 \end{verbatim}
 
-\subsection{Convolution and Filtering} 
-% overview of frequency analysis
-% low pass vs high pass filtering
-% mask design
-% Applying 2D Mask vs 1D Mask
-% linear and shift invariance
+\subsection{Convolutions and filtering} 
 
-Convolution is an integral that represents the overlap of one function t as it is shifted over another function f.
+A convolution is a linear and shift-invariant operator. Shift invariance implies that if $y(n)$ is the response to $x(n)$, then $y(n-k)$ is the response to $x(n-k)$. Linearity is defined in the usual manner. For our purposes, a 2D convolution is equivalent to filtering an image, where a filter is defined by a matrix that we call a mask.
 
-\[q(x,y) = \int \int_{-\infty}^{\infty} f(x-x', y-y') \cdot t(x',y') dx'dy'\]
-\[f * t\]
+For an image $f$ and a mask $t$, a 2D convolution is defined as the following:
 
-In terms of image processing, convolution is adding each element in a matrix to its local neighbours, weighted by the convolution mask. The convolution mask is a small matrix that is applied to an image matrix to perform blurring, sharpening, etc.
+\[
+\begin{aligned}
+f * t &= \iint_{-\infty}^{\infty} f(x-x', y-y') \cdot t(x',y') dx'dy'\\
+      &= \sum_{x' = -M}^{M}\sum_{y' = -N}^{N} f(x-x', y-y') \cdot t(x', y')
+\end{aligned}    
+\]
 
-Filtering helps remove either unwanted high frequencies or low frequencies, through the use of low-pass filters and high-pass filters.
+For the discrete case, the mask has to be in dimensions of $(2M+1) \times (2N + 1)$.
 
-The discrete case of convolution is as follows:
+\subsubsection{Cross-Correlations}
 
-\[g(x) = \Sigma_{x'=-M}^{M} f(x-x') \cdot t(x')\]
+A cross-correlation between $f$ and $t$ is defined as 
+$$
+R_{ft}(x, y) = \sum_{x' = -M}^M \sum_{y' = -N}^N f(x+x', y+y') t(x',y')
+$$
 
-2D masks can be composed from two 1D masks.
+The above definition is not invariant to the magnitude of $f$. A normalized $R_{ft}$ is needed:
 
-$\begin{pmatrix}
-  \frac{1}{4} & \frac{1}{2} & \frac{1}{4}
-\end{pmatrix}$
-$\bigotimes$
-$\begin{pmatrix}
-  \frac{1}{4}\\
-  \frac{1}{2}\\
-  \frac{1}{4}
-\end{pmatrix}$
-=
-$\begin{pmatrix}
-  \frac{1}{16} & \frac{1}{8} & \frac{1}{16}\\
-  \frac{1}{8} & \frac{1}{4} & \frac{1}{8}\\
-  \frac{1}{16} & \frac{1}{8} & \frac{1}{16}
-\end{pmatrix}$
+$$
+R_{ft} = \frac{\sum_{x', y'}f(x+x', y+y') t(x',y')}{\sqrt{\sum_{x',y'}f(x+x', y+y')^2 \cdot \sum_{x',y'}t(x',y')^2}}
+$$
 
-According to the Associative Law for convolution, $(\vec I \bigotimes \vec m_1) \bigotimes \vec m_{1}^{T} = \vec I \bigotimes (\vec m_1 \bigotimes \vec m_{1}^{T})$
+\subsubsection{Mask Design}
 
-The runtime analysis for the left hand side is $O(\mid \vec m_1 \mid)$, and the runtime analysis for the right hand side is $O(\mid \vec m_1 \mid^2)$. $\mid \vec m_1 \mid$ is the size of $\vec m_1$.
+Masks are usually matrices whose values are designed in a specific way to accomodate different uses. 
 
-A shift invariant system is the discrete equivalent of a time invariant system. If y(n) is the response of the system to x(n), then y(n-k) is the response of the system x(n-k).
+In computer vision, we usually use masks that are symmetric. This implies that we do not need to concern ourselves with demarcating convolutions and cross-correlations.
 
-Given two valid outputs, $x_1(t)$ and $x_2(t)$, as well as their outputs, $y_1(t) = H{x_1(t)}$ and $y_2(t) = H{x_2(t)}$, then a linear system must satisfy $\alpha y_1(t) + \beta y_2(t) = H{\alpha x_1(t) + \beta x_2(t)}$.
+When the same mask is applied twice (for example, applied onto itself), we will see that the mask grows in size. For example:
+
+$$
+( \;1\; 1\; 1\; ) * ( \;1\; 1\; 1\; ) = ( \;1 \;2 \;3 \;2 \;1 \;)
+$$
+
+It is implied that mask values are normalized, so the previous example should really be
+
+$$
+\left( \;\frac{1}{3}\; \frac{1}{3}\; \frac{1}{3}\; \right) * \left( \;\frac{1}{3}\; \frac{1}{3}\; \frac{1}{3}\; \right) = \left( \;\frac{1}{9} \;\frac{2}{9} \;\frac{3}{9} \;\frac{2}{9} \;\frac{1}{9} \;\right)
+$$
+
+For a target 2D mask, it may be worthwhile to decompose into a kronecker product of two 1D masks, For example:
+
+$$
+\left(\begin{matrix} 1& 0 & -1 \end{matrix}\right) \otimes \left(\begin{matrix} 1\\ 2\\ 1 \end{matrix}\right) = \left(\begin{matrix} 1 & 0 & -1\\ 2 & 0 & -2\\ 1 & 0 & -1 \end{matrix}\right)
+$$
+
+A better visualization is the following, each entry in the matrix is the product of the row value and column value:
+\begin{figure}[H]
+  \centering
+\begin{tabular}{c|ccc}
+  & \textbf{1} & \textbf{0} & \textbf{-1}\\
+  \hline
+  \textbf{1} & 1 & 0 & -1\\
+  \textbf{2} & 2 & 0 & -2\\
+  \textbf{1} & 1 & 0 & -1
+\end{tabular}
+\end{figure}
+
+The merit in decomposing the mask is to do with the time complexity of applying a filter. Each entry in the mask is used in a multiplication once for each pixel in the image (suppose the image is $N \times N$). Thus for a 2D $k \times k$ mask the time complexity will be $O(k^2N^2)$. However, for two 1D $k \times 1$ masks the time complexity will only be $O(kN^2)$.
+
+\subsubsection{Frequency Analysis}
+
+Images in the $(x,y)$ domain can be decomposed into sums of spatial frequencies in frequency domain via an integral transform mechanism (ex. DCT, ADST, etc). Spatial frequencies can be categorized into high frequencies or low frequencies. Applying a filter that attenuates (reduces) high frequencies while passing low frequencies is called a low-pass filter. The opposite is called a high-pass filter. The demarcation for a filter to distinguish between low and high frequency is called a cut-off frequency.
+
+Suppose we have an integral transform $\mathcal{I}$, there are important properties to exploit. In the foremost, a convolution in image space is translated to a multiplication in frequency space:
+
+$$
+\mathcal{I}(f * t) = \mathcal{I}(f) \times \mathcal{I}(t)
+$$
 
 \subsection{Smoothing}
 
-Smoothing an image is removing the noise from the image. While smoothing will remove noise, it will also remove the sharpness of the image, resulting in a blurred effect.
+Smoothing is a low-pass filtering operation. It is also called de-noising. While smoothing will remove noise, it will also remove the sharpness of the image, resulting in a blurred effect. In a sense, de-noising the image is achieved by smearing the image.
 
 \subsubsection{Unweighted Averaging}
 
-$t(x',y') =$
-$\begin{pmatrix}
-  \frac{1}{9} & \frac{1}{9} & \frac{1}{9}\\
-  \frac{1}{9} & \frac{1}{9} & \frac{1}{9}\\
-  \frac{1}{9} & \frac{1}{9} & \frac{1}{9}
-\end{pmatrix}$
+One naive approach to blur an image is to use a $k \times k$ mask that with all the same entries (i.e. all 1's; keep in mind that normalization is implied). For example, such a $4 \times 4$ mask would look like this:
 
-For example,
-$f = $
-$\begin{pmatrix}
-  0 & 0 & 0 & 0 & 0\\
-  0 & 0 & 0 & 0 & 0\\
-  0 & 9 & 9 & 9 & 0\\
-  0 & 0 & 0 & 0 & 0\\
-  0 & 0 & 0 & 0 & 0\\
-\end{pmatrix}$
-
-The output
-$f * t =$
-$\begin{pmatrix}
-  0 & 0 & 0 & 0 & 0\\
-  1 & 2 & 3 & 2 & 1\\
-  1 & 2 & 3 & 2 & 1\\
-  1 & 2 & 3 & 2 & 1\\
-  0 & 0 & 0 & 0 & 0\\
-\end{pmatrix}$
-
-Pros of this method is that it is a linear operator and reduces noise. The con is that it blurs the image.
+$$
+\left[\begin{matrix} 1&1&1&1\\1&1&1&1\\1&1&1&1\\1&1&1&1\\\end{matrix}\right]
+$$
 
 \subsubsection{K-nearest Neighbor Averaging}
 
-This method involves averaging the K neighbors that have the "nearest" intesity values. This method is edge preserving.
+This method involves investigating a $m \times m$ neighborhood around each image pixel. $K$ neighbors that are nearest to the centre image pixel value are taken and their average is preserved. This method is edge-preserving, but non-linear.
 
 \subsubsection{Median Filtering}
 
-Median filtering involves taking the average value within a window as the new value.
+This method also involves investigating a $m \times m$ neighborhood, but instead the median of the neighborhood is taken. This method is also very effective against salt and pepper (S\&P) noise.
 
-$f = $
-$\begin{pmatrix}
-  0 & 0 & 0 & 0 & 0 & 0\\
-  0 & 9 & 9 & 9 & 9 & 0\\
-  0 & 9 & 9 & 9 & 9 & 0\\
-  0 & 9 & 9 & 9 & 9 & 0\\
-  0 & 0 & 0 & 0 & 0 & 0\\
-\end{pmatrix}$
-
-The output
-$f' = $
-$\begin{pmatrix}
-  0 & 0 & 0 & 0 & 0 & 0\\
-  0 & 0 & 9 & 9 & 0 & 0\\
-  0 & 9 & 9 & 9 & 9 & 0\\
-  0 & 0 & 9 & 9 & 0 & 0\\
-  0 & 0 & 0 & 0 & 0 & 0\\
-\end{pmatrix}$
-
-A pro of this method is being able to remove noise while keeping the sharpness of the edges. However, this method is nonlinear, and corners are lost. To mitigate the loss of corners, you could use a different sample set, in a cross shape.
+This method is also edge-preserving and non-linear, and additionally it does not preserve corners. One way to mitigate this issue is to choose a different set of values to observe in the neighborhood. For example, in a cross shape instead of the entire neighborhood.
 
 \subsubsection{Gaussian Filtering}
 
-Gaussian filtering blurs the image to remove noise. It is still a Gaussian, even after performing multiplication, convolution, and/or Fourier transform. It is a "low-pass" filter that removes unwanted high frequencies. The larger $\sigma$ is, the lower $\sigma_f$ is, which gives a lower cut-off frequency.
-\[\sigma \cdot \sigma_f = \frac{1}{2\pi}\]
+Gaussian filtering is a popular method for denoising images, it is also used as a primitive in many other applications in computer vision. This is because the operation resembles optical blur, and a Gaussian mask has good mathematical properties.
+
+The filter is parametrized with two parameters $(\sigma^2_x,\sigma^2_y)$, but we will treat the filter as if it has only one parameter $\sigma^2 = \sigma^2_x = \sigma^2_y$.
+
+One important mathematical property of a Gaussian is that the integral transform of a Gaussian is still a Gaussian. For a Gaussian function $G(x)$ with variance $\sigma^2$, the integral transform response of the Gaussian $\mathcal{I}(G(x))$ has variance $\sigma_f^2$ where the relationship between $\sigma$ and $\sigma_f$ is described as $\sigma \cdot \sigma_f = (2\pi)^{-1}$. As such, the larger $\sigma$ is, the lower $\sigma_f$ is, which gives a lower cut-off frequency.
 
 \subsection{Sharpening}
 
-Sharpening, also known as "deblurring", is where a blurred version of the image is subtracted from the original f. This removes the blurred portions of the image and leaves behind the sharpened bits.
+Sharpening is a high-pass filtering operation. It is the opposite of smoothing and as such it is sometimes called de-blurring.
 
-\[\hat{f}(x,y) = f(x,y) - \nabla^{2}f(x,y)=\]
-\[5*f(x,y)-[f(x+1,y)+f(x-1,y)+f(x,y+1)+f(x,y-1)]\]
+\subsubsection{Laplacian-based Methods}
+
+The Laplacian (2nd derivative) sharpening operator is defined as $f - \nabla \cdot \nabla f$. The Laplacian $\nabla \cdot \nabla f = \frac{\partial^2f}{\partial x^2} + \frac{\partial^2f}{\partial y^2}$ is derived as follows:
 
 \[
+\begin{aligned}
+  \frac{\partial^2f}{\partial x^2} &= f(x+1,y) - f(x,y) - (f(x,y) - f(x-1,y))\\
+  & = f(x+1,y) + f(x-1,y) - 2f(x,y) \\ 
+  \frac{\partial^2f}{\partial y^2} &= f(x,y+1) - f(x,y) - (f(x,y) - f(x,y-1))\\
+  & = f(x,y+1) + f(x,y-1) - 2f(x,y)
+\end{aligned}
+\]
+
+As such, $\nabla^2 f(x,y) = f(x+1,y) + f(x-1,y) + f(x,y+1) + f(x,y-1) - 4f(x,y)$, which is similar to a blurred version of the image. The mechanism that a laplacian operator operates on is simply to subtract the noise from the image by subtracting a noisy version of the image: $\hat f(x,y) = 5f(x,y) - [f(x+1,y)+f(x-1,y)+f(x,y+1)+f(x,y-1)]$. This corresponds nicely to the following mask:
+
+$$
 \begin{bmatrix}
   0 & -1 & 0\\
   -1 & 5 & -1\\
   0 & -1 & 0
 \end{bmatrix}
+$$
+
+A common variation on this operator is to give weight to the laplacian, so the operator is defined as $f - w \nabla \cdot \nabla f$. While this method is effective at sharpening the image, it also creates lots of artefacts and noise.
+
+\subsubsection{Unsharp Masking}
+
+In a similar spirit to the laplacian operator, unsharp masking (USM) operates by adding a scaled and inverted version(inversion is the same as subtraction) of the blurred image to the original. The blurring mechanism is to simulate the noise model using a blurring mechanism in the image instead of using a derivative based method. USM generally performs better than the Laplacian operator, but it will take more time to run as it is more than just one simple filter.
+
+\section{Image Moments}
+
+For an image $f(x,y)$, the $(p,q)$\textsuperscript{th} order moment is defined as the following:
+
+\[
+\begin{aligned}
+  m(p,q) &= \iint x^p y^q f(x,y) dxdy\\
+         &= \sum_x \sum_y x^p y^q f(x,y)
+\end{aligned}  
 \]
 
-There can be different variations of sharpening, where we apply different weights, \(w\)
-\[\hat{f}(x,y) = f(x,y) - w * \nabla^{2}f(x,y)\]
+Suppose we have a segmented image represented by a binary image $B$, image moments can tell us different statistics about the image.
 
-\subsubsection{Laplacian-based Methods}
+$m(0,0)$ for the image tells us the amount of pixels that are 1 in $B$, or the area of 1's:
 
-The Laplacian (2nd derivative) operator is an approximation to the Laplacian $\frac{\partial^2f}{\partial x^2} + \frac{\partial^2f}{\partial y^2}$.
+$$
+A = \sum_i \sum_j B[i,j]
+$$
 
-$\frac{\partial^2f}{\partial x^2} = f(x+1,y) - f(x,y) - (f(x,y) - f(x-1,y))$
+The first moment in either axis helps us identify the centroid of 1's:
 
-$\frac{\partial^2f}{\partial y^2} = f(x,y+1) - f(x,y) - (f(x,y) - f(x,y-1))$
+$$
+\bar x = \frac{1}{A}\sum_i \sum_j j \cdot B[i,j] \;\;\; \bar y = \frac{1}{A} \sum_i \sum_j i \cdot B[i,j]
+$$
 
-$\nabla^2 f(x,y) = \frac{\partial^2f}{\partial x^2} + \frac{\partial^2f}{\partial y^2} = f(x+1,y) + f(x-1,y) + f(x,y+1) + f(x,y-1) - 4 \cdot f(x,y)$
+The axis of the least 2nd moment is the axis of elongation (orientation) for 2D regions.
 
-The Laplacian operator is either:
-$
+\section{Template Matching}
+
+Similarity between $M \times N$ image $f$ and a $k \times s$ template $t$ can be measured by their Euclidean distance, but the sum of squares itself will do:
+
+\[
+\begin{aligned}
+  &d^2(x,y)\\
+  =&\sum_{k,s}[f(x+k,y+s) - t(k,s)]^2 \\
+  =&\sum_{k,s}[f(x+k,y+s)^2 -2f(x+k,y+s)t(k,s) + t(k,s)^2]
+\end{aligned}
+\]
+
+If a perfect match is found at $(x',y')$, then $d^2(x',y') = 0$.
+
+Our goal is to minimize $d^2(x,y)$. $f(x+k,y+s)^2$ is independent from t, and $t(k,s)^2$ is a constant. Therefore we only need to focus on maximizing $\sum_{k,s}f(x+k,y+s)t(k,s)$ to minimize $d^2(x,y)$, which is in effect looking for minimas in a cross-correlation.
+
+\section{Edge Detection}
+
+We define edges as intensity discontinuities in images. Using edge information is useful for many computer vision applications. We will discuss many methods of edge detection in this section.
+
+\subsection{Gradient-Based Methods}
+
+In this category of methods, the image gradient is computed in one way or another to derive edge information.
+
+\[
+\begin{aligned}
+  \frac{\partial f}{\partial x} = f(x+n, y) - f(x,y) \;& \;\frac{\partial f}{\partial y} = f(x, y+n) - f(x,y)\\
+  S = \sqrt{\left(\frac{\partial f}{\partial x}\right)^2 + \left(\frac{\partial f}{\partial y}\right)^2} \;&\; \theta = \arctan\left(\frac{\partial f}{\partial x} \middle/ \frac{\partial f}{\partial y}\right)
+\end{aligned}
+\]
+
+Usually, $n=1$ for computing the partial derivatives. In this context, $S$ is the gradient magnitude, and $\theta$ is the directional information of the gradient. All of these are computed over the entire image, so there's a map of all of these values corresponding to each pixel.
+
+\subsubsection{Gradient Thresholding}
+
+Simply put, if the magnitude $S$ is greater than a threshold $t$, then it is an edge pixel, and an edge map can be generated from it.
+
+\subsubsection{Roberts Operator}
+
+The roberts operator computes $S$ and $\theta$ differently. Instead of using $\frac{\partial f}{\partial x}$ and $\frac{\partial f}{\partial y}$, it generates two filtered images with the following two masks:
+
+$$
+G_x = \left[\begin{matrix}1 & 0\\ 0 & -1\end{matrix}\right] \quad\quad G_y = \left[\begin{matrix}0 & 1\\ -1 & 0\end{matrix}\right]
+$$
+
+$S$ and $\theta$ are derived by the following:
+
+$$
+S = \sqrt{\left(G_x * f\right)^2 + \left(G_y * f\right)^2} \;\; \theta = \arctan\left(\frac{G_y * f}{G_x * f}\right) - \frac{3\pi}{4}
+$$
+
+The rest follows a simple thresholding procedure.
+
+\subsubsection{Prewitt and Sobel Operators}
+
+Prewitt uses 8 operators for each of the 8 ordinal-cardinal directions. The $0^{\circ}$ and $45^{\circ}$ operators are as follows:
+
+$$
 \begin{bmatrix}
-  0 & 1 & 0\\
-  1 & -4 & 1\\
-  0 & 1 & 0
+  -1 & 0 & 1\\
+  -1 & 0 & 1\\
+  -1 & 0 & 1
+\end{bmatrix}\quad
+\begin{bmatrix}
+  0 & 1 & 1\\
+  -1 & 0 & 1\\
+  -1 & -1 & 0
 \end{bmatrix}
-$
-or
-$
+$$
+
+This method includes providing directional information and uses local averages to reduce noise. However, the edge width can be greater than 1, which means there isn't a single output.
+
+The Sobel operator is similar to Prewitt's, except it places a stronger emphasis on the weighting of the direction each mask is meant for. Below are the corresponding masks to compare with their Prewitt counterparts:
+
+$$
+\begin{bmatrix}
+  -1 & 0 & 1\\
+  -2 & 0 & 2\\
+  -1 & 0 & 1
+\end{bmatrix}\quad
+\begin{bmatrix}
+  0 & 1 & 2\\
+  -1 & 0 & 1\\
+  -2 & -1 & 0
+\end{bmatrix}
+$$
+
+The $0^{\circ}$ and $90^{\circ}$ Sobel operators are often used to generate gradient information.
+
+\subsection{Laplacian-Based Methods}
+
+Instead of working with the first derivative, we can work with the second derivative (which is a laplacian) to derive edge information.
+
+\subsubsection{Zero Crossings}
+
+The laplacian edge operator we describe here is different from the sharpening operator. Namely, the laplacian edge operator is 
+
+$$
 \begin{bmatrix}
   0 & -1 & 0\\
   -1 & 4 & -1\\
   0 & -1 & 0
 \end{bmatrix}
-$
+$$
 
-Some cons of this method is that the directional information is not presented, and it enhances the noise. Zero crossings in the 2nd derivative correspond with edges.
+Whereas the laplacian sharpening operator has a midle entry of 5 instead of 4.
 
-\subsubsection{Unsharp Masking}
+After applying the operator, we look for zero-crossings in the resulting image to determine where the edges are. Zero crossings are simply where there is a negative value and a neighboring positive value.
 
+\subsubsection{Marr's Operator}
 
+Marr's Operator applies a gaussian blur $G$ to the image $f$ before calculating the laplacian to find zero crossings:
 
-\subsection{Image Moments}
+$$
+\nabla^2 (G(x,y) * f(x,y))
+$$
 
-The (p,q)$^{th}$ order moment of f(x,y) is:
-$m(p,q) = \int \int x^p \cdot y^q \cdot f(x,y) dxdy$
-and in discrete form:
-$m_{pq} = \Sigma_x \Sigma_y x^p y^q \cdot f(x,y)$.
+Due to a property for convolutions, the above is equivalent to 
 
-A segmented image can be represented by a binary image B[i,j] in which "1" could represent, for example, the foreground pixels.
+$$
+(\nabla^2 G(x,y)) * f(x,y)
+$$
 
-0th order moment: Area A = $\Sigma_i \Sigma_j B[i,j]$
-1st order moment: centroid
-$\bar x = \frac{\Sigma_i \Sigma_j j \cdot B[i,j]}{A}$,
-$\bar y = \frac{\Sigma_i \Sigma_j i \cdot B[i,j]}{A}$
+Thus operator is also called a laplacian of gaussian (LOG) operator. The gaussian's $\sigma$ can be tuned for different spatial frequencies.
 
-Axis of least 2nd moment is the access of elongation(orientation) for 2D regions.
-
-\section{Template Matching}
-% cross correlation vs convolution, how it doesn't matter in cv
-
-Similarity between image $f(\vec p)$ and a template $t(\vec p)$ can be measured by a square of the Euclidean distance:
-
-$d^2(\vec q) = \Sigma_{\vec p}[f(\vec p + \vec q) - t(\vec p)]^2$
-where $\Sigma_{\vec p}$ means $\Sigma_{x = -M}^M \Sigma_{y = -N}^N$. If $t(\vec p)$ and $f(\vec p)$ match perfectly, then $d^2(\vec q) = 0$.
-
-Expand it to get:
-$d^2(\vec q) = \Sigma_{\vec p}[f^2(\vec p + \vec q) - 2 \cdot f(\vec p + \vec q) \cdot t(\vec p) + t^2(\vec p)]$
-
-Since $f^2(\vec p + \vec q)$ is independent from t, and $t^2(\vec p)$ is a constant, then, to minimize $d^2(\vec q)$, we only need to focus on maximizing $\Sigma_{\vec p} f(\vec p + \vec q) \cdot t(\vec p)$.
-
-Cross Correlation: $R_{ft}(\vec q) = \Sigma_{\vec p} f(\vec p + \vec q) \cdot t(\vec p)$ or $R_{ft}(x, y) = \Sigma_{x = -M}^M \Sigma_{y = -N}^N f(x+x', y+y') \cdot t(x',y')$
-
-The above definition is not invariant to the magnitue of f. A normalized $R_{ft}$ is needed.
-
-$$R_{ft} = \frac{\Sigma_{x'} \Sigma_{y'} f(x+x', y+y') \cdot t(x',y')}{\sqrt{\Sigma_{x'} \Sigma_{y'}(f(x+x', y+y'))^2 \cdot \Sigma_{x'} \Sigma_{y'}(t(x',y'))^2}}$$
-
-\section{Edge Detection}
-
-Edges are intensity discontinuities in images. Edge operators detect the presence of local edges.
-
-\subsection{Gradient-Based Methods}
-
-\subsubsection{Gradient Thresholding}
-
-$(\partial f/\partial x) = f(x+n, y) - f(x,y)$
-
-$(\partial f/\partial y) = f(x, y+n) - f(x,y)$
-
-$s = \sqrt{(\partial f/\partial x)^2 + (\partial f/\partial y)^2}$
-
-$\theta = arctan((\partial f/\partial y)^2/(\partial f/\partial x)^2)$
-
-s is the magnitude, and $\theta$ is the direction.
-If the magnitude is greater than a threshold t, then it is an edge, and an edge map can be generated.
-
-\subsubsection{Roberts Operator}
-
-        \[
-          \begin{bmatrix}
-            0 & 1\\
-            -1 & 0
-          \end{bmatrix}\quad
-          \begin{bmatrix}
-            1 & 0\\
-            0 & -1
-          \end{bmatrix}
-        \]
-        \[
-          \begin{matrix}
-            \Delta_1
-          \end{matrix}\quad
-          \begin{matrix}
-            \Delta_2
-          \end{matrix}
-        \]
-\[s = \mid\Delta_1\mid + \mid\Delta_2\mid\]
-
-\subsubsection{Prewitt and Sobel Operators}
-
-Prewitt uses 8 operators
-
-        \[
-          \begin{bmatrix}
-            -1 & 0 & 1\\
-            -1 & 0 & 1\\
-            -1 & 0 & 1
-          \end{bmatrix}\quad
-          \begin{bmatrix}
-            0 & 1 & 1\\
-            -1 & 0 & 1\\
-            -1 & -1 & 0
-          \end{bmatrix}
-        \]
-etc.
-
-(The first one is for 0$^{\circ}$ and the second one is for 45$^{\circ}$)
-
-Pros of this method include providing directional information and using local averages to reduce noise. However, the edge width is greater than 1, which means there isn't a single input.
-
-Sobel is similar to Prewitt, and also uses 8 operators.
-
-        \[
-          \begin{bmatrix}
-            -1 & 0 & 1\\
-            -2 & 0 & 2\\
-            -1 & 0 & 1
-          \end{bmatrix}\quad
-          \begin{bmatrix}
-            0 & 1 & 2\\
-            -1 & 0 & 1\\
-            -2 & -1 & 0
-          \end{bmatrix}
-        \]
-etc.
-
-(The first one is for 0$^{\circ}$ and the second one is for 45$^{\circ}$)
-
-\subsection{Laplacian-Based Methods}
-% log vs dog
-
-\begin{itemize}
-  \item {LOG (Laplacian of Gaussian)}
-  
-  Mark zero crossings (where the values are zero)
-  \item {DOG (Difference of Gaussians)}
-  
-  Can change $\sigma$ of a Gaussian to find edges with different spatial frequencies
-  LOG can be approximated with DOG
-\end{itemize}
+Additionally, a laplacian of gaussian can be approximated by the difference between two gaussians, called a difference of gaussians (DOG).
 
 \subsection{Marr's Edge Operator}
 
@@ -375,6 +374,8 @@ Given an image f(x,y), edges can be found by locating the zero crossings from \(
 Derivative rule for convolution: \(D^2(G*f) = D^2G * f\).
 
 \subsection{Canny Edge Operator}
+
+After discussing previous edge detection operators, we collect some thoughts to approach another edge operator.
 
 \subsubsection{Criteria for Good Edge Detection}
 \begin{itemize}
@@ -385,80 +386,66 @@ Derivative rule for convolution: \(D^2(G*f) = D^2G * f\).
       \item Unique Output
 \end{itemize}
 
-% criterion for good edge detection
-% 5 stages of Canny Edge Operator
+\subsubsection{Stages in Canny Edge Detection}
+
 \begin{enumerate}
-        \item \textbf{Smoothing}
-        
-        Use Gaussian I * G, where I is the image matrix and G is the Gaussian mask
-        \item \textbf{Gradient Operator}
-        
-        Use the horizontal and vertical Sobel operators to generate the x and y derivatives of the image function.
-        By applying filters from both the horizontal and vertical directions, the gradient calculation can accurately determine the intensity of edges.
+\item \textbf{Smoothing}
 
-        \[
-          \begin{bmatrix}
-            -1 & 0 & 1\\
-            -2 & 0 & 2\\
-            -1 & 0 & 1
-          \end{bmatrix}\quad
-          \begin{bmatrix}
-            1 & 2 & 1\\
-            0 & 0 & 0\\
-            -1 & -2 & -1
-          \end{bmatrix}
-        \]
+Apply Gaussian Blur to the image $I' = G*I$.
 
-        Use the derivatives to determine the magnitude and $\theta$ of the image.
-        
-        $s = \sqrt{I_x^2 + I_y^2}$
+\item \textbf{Gradient Operator}
 
-        $I_x$ and $I_y$ are the images after applying the Sobel filters, and s is the magnitude.
+Use the $0^{\circ}$ and $90^{\circ}$ Sobel operators to generate $\frac{\partial I'}{\partial x}$ and $\frac{\partial I'}{\partial y}$. Using these, generate $S$ and $theta$.
 
-        $\theta = arctan(I_y/I_x)$
+\item \textbf{Non-maximum Suppression}
 
-        \item \textbf{Non-maximum Suppression}
-        
-        Non-maximum suppression thins out the edges that result from the gradient operator.
-        The algorithm goes through all the elements of the gradient intensity matrix and finds pixels with the maximum value in the edge directions.
+Non-maximum suppression thins out the edges that result from the gradient operator.
 
-        \item \textbf{Double Thresholding}
-        
-        Double thresholding determines the strength of each pixel, whether it's weak, strong, or irrelevant.
-        There are two thresholds, a high threshold to determine the strong pixels and a low threshold to filter out the irrelevant pixels.
-        Strong pixels are included in the final image, and weak pixels have to be filtered through again to see whether or not they are strong or discarded.
-        
-        \item \textbf{Hysteresis Tracking}
-        
-        This is used to determine if weak pixels are going to be transformed into strong pixels and included in the final edge map.
-        If a weak pixel has at least one pixel surrounding it that is strong, then it is turned into a strong pixel.
+For each pixel $p$ in $S$, examine two neighbors along the direction of $\theta$. The pixel will be suppressed (set to 0) if $p$ is not the largest value among its neighbors, and the directions of its neighbors don't differ from $p$ by more than $45^{\circ}$.
+
+\item \textbf{Double Thresholding}
+
+Double thresholding determines the strength of each pixel, whether it's weak, strong, or irrelevant.
+
+There are two thresholds, a high threshold $Th_h$ to tell apart strong and weak edge pixels. A low threshold $Th_s$ is then used to tell apart weak and irrelevant pixels. Strong pixels are given a value, and weak pixels are given another value. The resulting matrix will only have three unique values.
+
+\item \textbf{Hysteresis Tracking}
+
+This is used to determine if weak edge pixels are going to be transformed into strong edge pixels and included in the final edge map. Otherwise they are discarded.
+
+If a weak edge pixel has at least one strong edge pixel surrounding it, then it is turned into a strong pixel.
+
+The final edge map is defined as the map of all the strong edge pixels.
+
 \end{enumerate}
 
 \section{Regions and Segmentation}
 
 A region is a group of connected pixels with similar properties in an image.
+
 \subsection{Image Segmentation}
 
-Image segmentation is where the image is divided into regions. It can be region-based, edge-based, or a combination of both.
-Different Methods of Image Segmentation:
-\begin{enumerate}
+Image segmentation is a process to divide an image into regions. It can be done in a manner that is region-based, edge-based, or in a hybrid approach.
+
+Some of the methods for Image Segmentation are as follows
+\begin{itemize}
   \item {Thresholding}
   \item {Blob colouring (for binary images)}
   \item {Split and Merge}
   \item {K-Means}
   \item {Mean Shift}
-\end{enumerate}
+\end{itemize}
 
 \subsection{Gestalt Psychology and Human Perception}
 
-Grouping is the key to visual perception. 
+Grouping is the key to visual perception. The Law of Pragnanz in Gestalt psychology states that people perceive ambiguous or complex images as the simplest form possible.
 
+Here are some of the heuristics that can be used to group items together.
+\begin{multicols}{3}
 \begin{itemize}
   \item {Proximity}
   \item {Similarity}
   \item {Common Fate}
-  
-  Items that have similar motion.
   \item {Common Region}
   \item {Parallelism}
   \item {Symmetry}
@@ -466,14 +453,14 @@ Grouping is the key to visual perception.
   \item {Closure}
   \item {Familiar Shapes}
 \end{itemize}
-
-An image can be separated into a figure and a ground.
+\end{multicols}
 
 \section{Texture Analysis}
 
-Texture is repeated patterns of local intensity variations, and it depends on the image resolution.
+Textures are defined as repeated patterns of local intensity variations, and it depends on the image resolution.
 There are three issues related to texture analysis:
 
+There are three main tasks in texture analysis:
 \begin{itemize}
   \item {texture classification}
   \item {texture segmentation}
@@ -484,99 +471,91 @@ There are three issues related to texture analysis:
 
 \subsubsection{Spatial Gray Level Dependence Method}
 
-Define a gray level co-occurrence matrix. A gray level co-occurrence matrix is a matrix that contains information about the positions of pixels having similar gray level values.
+The spatial gray level dependence method utilizes a gray level co-occurence matrix $P$. It is a $M \times M$ where $M$ is the amount of gray levels. $P$ serves as a tally of pixel-value pairs that follow a predefined pixel structure $\mathbf{d}$. Due to the particularity of $\mathbf{d}$, $P$ is not symmetric. $P$ is also normalized, and as such treated as a pmf.
 
-  \[
-    \begin{bmatrix}
-      2 & 1 & 2 & 0 & 1\\
-      0 & 2 & 1 & 1 & 2\\
-      0 & 1 & 2 & 2 & 0\\
-      1 & 2 & 2 & 0 & 1\\
-      2 & 0 & 1 & 0 & 1
-    \end{bmatrix}
-  \]
+$\mathbf{d}$ is defined as a pair of integral values $(a,b)$ which is to be interpreted as "starting with pixel intensity $i$, move $a$ units to the right then $b$ units down to get to pixel intesity $j$". In other words, a valid pixel pair satisfying $\mathbf{d}$ is $f(x,y)=i$ and $f(x+a,y+b)=j$.
 
-This is the matrix of a 5 x 5 image with 3 gray levels.
+With $P$, we can define some related measures:
 
-1/16 * 
-\(
-  \begin{bmatrix}
-    0 & 2 & 2\\
-    2 & 1 & 2\\
-    2 & 3 & 2
-  \end{bmatrix}
-  \)
-  
-  This is the gray level co-occurrence matrix for d = (1,1). The indices i are for the rows (0,1,2), and j are for the columns (0,1,2). This array is called P(i,j).
-  The algorithm for constructing a gray level co-occurrence matrix is counting all the pairs of pixels in which the first pixel has value i, and its matching pair displaced from first pixel by d has a value of j.
+\begin{itemize}
+\item Entropy: $-\sum_{i,j} P[i,j] \log P[i,j]$
 
-  \[Entropy = -\Sigma_i \Sigma_j P[i,j]logP[i,j]\]
+Entropy is the level of randomness in the data that is being processed. Entropy is highest when all the elements in P[i,j] are the same. In terms of images, this means that there is no preferred gray level.
 
-  Entropy is the level of randomness in the data that is being processed. Entropy is highest when all the elements in P[i,j] are the same. In terms of images, this means that there is no preferred gray level.
-  
-  \[Energy = \Sigma_i \Sigma_j P^2[i,j]\]
+\item Energy:  $\sum_{i,j} P[i,j]^2$
 
-  \[Contrast = \Sigma_i \Sigma_j (i-j)^2 P[i,j]\]
+Energy simply defined as the sum of all of the matrix values combined
 
-  Contrast is a measure of the local variations in an image. If there is a large amount of variation,
-  the P[i,j]'s will be concentrated away from the main diagonal and the contrast will be high.
+\item Contrast: $\sum_{i,j} (i-j)^2 P[i,j]$
 
-  \[Homogeneity = \Sigma_i \Sigma_j \!\frac{P[i,j]}{1+\mid i-j \mid}\]
+Contrast is a measure of variation in an image. The formula places greater weighting on entries away from the diagonal (due to the $(i-j)^2$ term), thus a high contrast would mean more pixel pairs satisfying $\mathbf{d}$ will be constructed with widely different gray level intensities.
 
-  Homogenous images result in a co-occurrence matrix with a combination of high and low P[i,j]'s. If the range of gray levels is small, then P[i,j] will be concentrated along the main diagonal.
+\item Homogeneity: $\sum_{i,j} \frac{P[i,j]}{ 1 + | i-j |}$
 
-  P[i,j] is not symmetric, since the number of pixels having gray levels [i,j] does not necessarily equal the number of pixels with gray levels [j,i].
-  Elements of P[i,j] is normalized by 1/16, where 16 is the number of pixel pairs.
-  The normalized P[i,j] is treated as a probability mass function because $\Sigma_i,j P[i,j] = 1$.
+Homogeneity is an opposite measure to Contrast. It places greater weighting on entries on the diagonal (due to the $1 + |i - j|$ denominator). A highly homogenous image would mean more pixel pairs satisfying $\mathbf{d}$ are constructed with similar gray level intensities.
 
-  Negatives of this method is that many d's have to be tried before arriving at a good one, and it's not good for textures that are composed of primitives of a certain shape/structure.
+\end{itemize}
+
+One major downside of this method is that many $\mathbf{d}$'s have to be tried before arriving at a good one. It is also not good for textures that are composed of primitives of a certain shape/structure.
 
 \subsubsection{Gray Level Run Length Method}
-% 5 texture measures
-Define gray level run matrix $P_\theta$, where $P_\theta(i,j)$ is the number of times an image contains a run of length j for pixels with value i in a certain direction of $\theta$.
-Long runs can be expected for images with coarse texture.
 
-\[T_\theta = \Sigma_{i=1} ^{N_g} \Sigma_{j=1} ^{N_r} P_\theta(i,j)\]
+The gray level run-length method utilizes a gray level run matrix $P_\theta$, where $P_\theta(i,j)$ is the number of times an image contains a run of length j for pixels with value i in a certain direction of $\theta$. Long runs can be expected for images with coarse texture.
+
+With $P_\theta$, we can define some related measures. We define the following as a normalization factor for our measures:
+
+$$
+T_\theta = \sum_{i=1} ^{N_g} \sum_{j=1} ^{N_r} P_\theta(i,j)
+$$
+
 where $N_g$ is the number of gray levels and $N_r$ is the number of run lengths
 
-\begin{enumerate}
-  \item {Short run emphasis inverse moments}
+\begin{itemize}
+\item {Short run emphasis inverse moments}
+
+$$  
+\frac{1}{T_\theta} \cdot \sum_{i=1} ^{N_g} \sum_{j=1} ^{N_r} \frac{P_\theta (i,j)}{j^2}
+$$
+
+This measure emphasizes short runs of a gray level image by dividing by $j^2$. Short run emphasis is large when there are lots of short runs of the same intensity.
+
+\item {Long run emphasis moments}
   
-  \[\frac{1}{T_\theta} \cdot \Sigma_{i=1} ^{N_g} \Sigma_{j=1} ^{N_r} \frac{P_\theta (i,j)}{j^2}\]
+$$
+\frac{1}{T_\theta} \cdot \sum_{i=1} ^{N_g} \sum_{j=1} ^{N_r} j^2 P_\theta (i,j)
+$$
 
-  This measure emphasizes short runs of a gray level image. Short run emphasis is large when there are lots of short runs of the same intensity.
+This measure emphasizes long runs of a gray level image by multiplying by $j^2$. Long run emphasis is large when there are lots of long runs of the same intensity.
 
-  \item {Long run emphasis moments}
+\item {Gray level nonuniformity}
   
-  \[\frac{1}{T_\theta} \cdot \Sigma_{i=1} ^{N_g} \Sigma_{j=1} ^{N_r} j^2 \cdot P_\theta (i,j)\]
+$$
+\frac{1}{T_\theta} \cdot \sum_{i=1} ^{N_g} \left(\sum_{j=1} ^{N_r} P_\theta (i,j)\right)^2
+$$
 
-  This measure emphasizes long runs of a gray level image. Long run emphasis is large when there are lots of long runs of the same intensity.
+The sum inside of the brackets is the total number of runs for a certain gray level value. This value is large if the runs are not evenly distributed across different intensities.
 
-  \item {Gray level nonuniformity}
+\item {Run length nonuniformity}
   
-  \[\frac{1}{T_\theta} \cdot \Sigma_{i=1} ^{N_g} (\Sigma_{j=1} ^{N_r} P_\theta (i,j))^2\]
+$$
+\frac{1}{T_\theta} \cdot \sum_{j=1} ^{N_r} \left(\sum_{i=1} ^{N_g} P_\theta (i,j)\right)^2
+$$
 
-  The sum inside of the brackets is the total number of runs for a certain gray level value. This value is large if the runs are not evenly distributed across different intensities.
+The sum inside the brackets is the total number of runs with a certain run length at a certain gray level. This value is large if intensities are not evenly distributed across different run lengths.
 
-  \item {Run length nonuniformity}
+\item {Inverse of weighted average run length}
   
-  \[\frac{1}{T_\theta} \cdot \Sigma_{j=1} ^{N_r} (\Sigma_{i=1} ^{N_g} P_\theta (i,j))^2\]
-
-  The sum inside the brackets is the total number of runs with a certain run length at a certain gray level.
-
-  \item {Inverse of weighted average run length}
-  
-\[\frac{T_\theta}{\Sigma_{i=1} ^{N_g} \Sigma_{j=1} ^{N_r} j \cdot P_\theta (i,j)}\]
+$$
+T_\theta\left(\sum_{i=1}^{N_g} \sum_{j=1} ^{N_r} j \cdot P_\theta (i,j)\right)^{-1}
+$$
 
 This measure puts more weight into longer run length.
 
-\end{enumerate}
-
-Use these 5 measures in each of the 4 directions. For these textures (swamp, lake, railroad, orchard, scrub, suburb), the measures have 83$\%$ accuracy.
+\end{itemize}
 
 \subsection{Structural Methods}
 
-Textures are composed of primitives known as "texels".
+The basic assumption in structural methods is that textures are composed of primitives known as "texels".
 
 \begin{itemize}
   \item {Works better than statistical methods if the primitives can be detected}
@@ -584,9 +563,11 @@ Textures are composed of primitives known as "texels".
   \item {Spatial relationship of the primitives based on the co-occurrence of these primitives can be further explored}
 \end{itemize}
 
-For example, if we use an edge-based method, then the primitives are edges, the properties are orientation, gradient, and density, and the spatial relationship is edge separations.
+For example, if we use an edge-based method, then the primitives are edges. The properties are orientation, gradient, and density. The spatial relationship is edge separations.
 
 \subsubsection{Tamura's Texture Measures}
+
+Tamura's features are based on psychophysical studies of the characterizing elements that are perceived in textures by humans. Some of those features include"
 
 \begin{itemize}
   \item {Coarseness}
@@ -607,7 +588,7 @@ For example, if we use an edge-based method, then the primitives are edges, the 
   
   The algorithm for curve approximation using polyline involves iteratively going through vertices, and adding new vertices if the maximum distance between the polyline and the shape is greater than $T_{max}$.
 
-  For closed polylines, such as polygon, the area is $\frac{1}{2}\Sigma_{i=0}^{n-1}(x_{i+1}y_i + x_iy_{i+1})$.
+  For closed polylines, such as polygon, the area is $\frac{1}{2}\sum_{i=0}^{n-1}(x_{i+1}y_i + x_iy_{i+1})$.
 
  \subsubsection{Chain Code}
 
