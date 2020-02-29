@@ -334,7 +334,7 @@ Prewitt uses 8 operators
         \]
 etc.
 
-(The first one is for 0\textdegree and the second one is for 45\textdegree)
+(The first one is for 0$^{\circ}$ and the second one is for 45$^{\circ}$)
 
 Pros of this method include providing directional information and using local averages to reduce noise. However, the edge width is greater than 1, which means there isn't a single input.
 
@@ -354,7 +354,7 @@ Sobel is similar to Prewitt, and also uses 8 operators.
         \]
 etc.
 
-(The first one is for 0\textdegree and the second one is for 45\textdegree)
+(The first one is for 0$^{\circ}$ and the second one is for 45$^{\circ}$)
 
 \subsection{Laplacian-Based Methods}
 % log vs dog
@@ -612,19 +612,87 @@ For example, if we use an edge-based method, then the primitives are edges, the 
  \subsubsection{Chain Code}
 
   Chain code is an economic coding method that has either 4 or 8 neighbours.
+  The derivative of the chain code is equivalent to the difference of the chain code modulo 4 (or 8).
+  A pro of this method is that it is rotation invariant.
 
+  For the area of an enclosed space:
+  For each element of the chain code in counterclockwise order, there are 4 cases
   
+  \vspace{2mm}
+  
+  Case 0: area = area - y
+
+  \vspace{2mm}
+
+  Case 1: y = y + 1
+
+  \vspace{2mm}
+
+  Case 2: area = area + y
+
+  \vspace{2mm}
+
+  Case 3: y = y - 1
 
  \subsubsection{Curvature Scale Space (CSS)}
 
+  Find the zero crossings of the image's contour (inflection points).
+  The positions of these inflection points are relative to the length of the contour curve.
+  The boundary function is convolved with a Gaussian kernel of increasing width.
+  At each $\sigma$, the curvature function is computed and the zero crossing points are identified and plotted.
+  As $\sigma$ increases, the contour will lose its inflection points and become a convex blob.
+  
+  \vspace{5mm}
+  
+  When $\sigma$ increases, no new inflection points are created, but their locations are shifted.
+  More prominent structures in the contour can survive large values of $\sigma$.
+  The localization problem of inflection points can be solved by tracking their locations in the scale-space image back to the original.
+  It is a robust method, that is also fast and compact.
+  CSS can be used for shape comparison, finding similarities and differences between images.
+
+  \vspace{5mm}
+
+  In a shape context descriptor, the image is separated into several bins, and you count the number of points that fall within each bin. This displays a distribution of points relative to each point.
+  Solve for least cost assignments, $C_{ij}$ to get correspondences. And then use a template given by the correspondences.
+
  \subsection{Region Representations}
  \subsubsection{Spatial Occupancy Array}
+
+  This method is simple and results in a sparse array.
+
  \subsubsection{Axis-based Representations}
+
+  This method involves putting images on a grid and figuring out which x values correspond with a specific y value of the image (vice versa for x-axis).
+  A con of this method is that it usually requires a combination of both X- and Y-axis representations.
+
  \subsubsection{Quad-trees}
  % split and merge
- \subsubsection{Medial Axis Transform}
+
+  A pro of this method is that it is a hierarchical tree representation. A con is that the representation depends on the chosen grid size. Also objects can't be easily shifted or scaled.
+  
+  \vspace{5mm}
+
+  Algorithm: Split and Merge
+
+  \vspace{5mm}
+
+  This algorithm uses a quad tree for region growing. You start at an intermediate level, such as 64 x 64, then do a bottom up process (merge), and a top down process (split).
+  During quad-tree construction, pixels in the pyramid are either black or white.
+  You intersect two quad trees R1 and R2, and do the following steps:
+  If R1 is black, then return R2. If R1 is white, return white. If R2 is black, return R1. If R2 is white, return white.
+  Next, you determine the elements of the new tree, $R_{new}$.
+  The NW element of $R_{new}$ is the intersect between NW R1 and NW R2.
+  The NE element of $R_{new}$ is the intersect between NE R1 and NE R2.
+  The SW element of $R_{new}$ is the intersect between SW R1 and SW R2.
+  The SE element of $R_{new}$ is the intersect between SE R1 and SE R2.
+
+ \subsubsection{Medial Axis Transform (MAT)}
 
  % continue from here from "distances"
+
+  MAT is a thinning algorithm to get the skeleton of the region.
+  For each point p, find the closest neighbors on the region boundary.
+
 
 \subsection{Distances}
 \subsection{Feature Space}
