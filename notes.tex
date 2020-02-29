@@ -622,7 +622,47 @@ There are three parameters and as such the parameter space will be 3-dimensional
 The merit in using the hough transform is that it works for broken lines and curves, and that it is insensitive to noise. However, with increasing amount of parameters it becomes computationally expensive to execute.
 
 \section{Generalized Hough Transform}
-\subsection{R-Table Generation}
+
+While classical Hough Transforms are ideal for analytical curves, it is unable to work with arbitrary curves. Generalized Hough Transform (GHT) works by detecting objects based on the shape of its boundary. It is a generalized form of template matching. It contains two components: Modeling and Matching.
+
+\subsection{Modeling: R-Table Generation}
+
+A template that is given to GHT is transformed into an R-table. An R-table is a lookup table of differences from edge points to a reference point. An R-table is built in the following way:
+
+\begin{enumerate}
+  \item Determine template centroid $(x_c, y_c)$ as a reference point.
+  \item Initialize R-table as $Q$ bins, where $Q$ is the amount of intervals to divide $0^{\circ}$ to $360^{\circ}$ into.
+  \item For each edge point $(x, y)$ in the template, derive its gradient angle and compute $\phi$, which is the index of the bin that the entry belongs to.
+  \item place $(\Delta x, \Delta y) = (x_c-x,y_c-y)$ in bin $\phi$,
+\end{enumerate}
+
+In the original formulation, the entries are $(r_i, \theta_i)$ values that denote distances and angles from the centroid. Storing simple differences allows for simpler calculations for reconstruction of centroid locations when there is a scale $s$ and rotation $\theta$:
+
+$$
+\left[\begin{matrix}x_c \\ y_c \end{matrix}\right] = s \left[\begin{matrix}\cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{matrix}\right] \left[\begin{matrix} \Delta x \\ \Delta y\end{matrix}\right]
+$$
+
+\subsection{Matching: Voting Algorithm}
+
+After the R-table is generated, the voting algorithm is as follows:
+
+\begin{enumerate}
+  \item Generate edge map and gradient angles of the source image
+  \item Initialize the Hough Space with the image dimensions
+  \item For each edge pixel in the edge map:
+  \begin{itemize}
+          \item compute $\phi$ to determine the bin to look up in the model (with compensation for rotation)
+          \item For each entry in bin $\phi$:
+          \begin{itemize}
+                  \item Compute a candidate location (with compensation for rotation and scaling) for the model
+                  \item Cast a vote in the candidate location if it does not clip out of the image
+          \end{itemize}
+  \end{itemize}
+\end{enumerate}
+
+\subsection{Discussion}
+
+GHT is only able to detect with one orientation and scale at a time, which is kind of inefficient. Peak detection with the votes is also non-trivial. It can be used in multiple stages to construct more complex contours.
 
  \section{Representations of 2D Geometric Structures}
  \subsection{Boundary Representations}
