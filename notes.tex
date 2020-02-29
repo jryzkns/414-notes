@@ -575,10 +575,54 @@ Tamura's features are based on psychophysical studies of the characterizing elem
   \item {Directionality}
 \end{itemize}
 
- \section{Classical Hough Transform}
+\section{Classical Hough Transform}
 
- \section{Generalized Hough Transform}
- \subsection{R-Table Generation}
+The Classical Hough Transform is good for detecting lines and curves. It exploits the property that for analytical curves, dual spaces can be formed.
+
+For detecting a line, the most naive parametrization of a line is $y = mx + c$. Suppose we have an $(x,y)$ space and a $(m,c)$ space. The line $y = mx + c$ in $(x,y)$ space corresponds to a point in the $(m,c)$ space. Similarly, a line in $(m,c)$ space corresponds to a point in $(x,y)$ space. There are at least two points needed in $(x,y)$ space to identify a line, and as such two corresponding lines in $(m,c)$ will intersect and form a point pinpointing the parameters $(m,c)$ needed to form a line in $(x,y)$ space.
+
+The disadvantage of this parametrization is that a vertical line have $m = \infty$, and that would imply a huge $(m, c)$ space.
+
+\subsection{Voting Algorithm}
+
+The hough transform uses a process of voting for potentional matches of the geometric object needed, and by indentifying the most voted parameters the object in question can be detected. The following outline follows line detection with the parametrization $y = mx + c$
+
+\begin{enumerate}
+  \item Form a voting space with max and min values of $c$ and $m$
+  \item For each edge point $(x,y)$ with gradient magnitude $S$ greater than a set threshold, increment all points in the voting space that satisfies $c = -xm + y$
+  \item Identify maxima and peaks in the voting space to find lines in the original image
+\end{enumerate}
+
+\subsection{Polar parametrization of Lines}
+
+As mentioned before, vertical lines cause $m = \infty$, which makes implementing a voting space difficult. As such, we can reparametrize a line to be following polar coordinates instead. A line will be described by the tangent line to a circle of radius $\rho$ at angle $\theta$. The relationship between $x, y, \rho, \theta$ is described as the following:
+
+$$
+\rho = x\cos\theta+y\sin\theta
+$$
+
+Depending on the range of $\rho$ and $\theta$, we can have $0 \leq \theta \leq 2\pi$ with $0 \leq \rho$. Alternatively, we can also have $0 \leq \theta \leq \pi$ with $\rho$ being positive or negative.
+
+Because images are discrete entities, the margin of error grows the bigger as a point $(x,y)$ on a line goes further away from the origin: $\delta \rho \approx d \delta \theta$. One way to mitigate this issue is to perform this parametrization hierarchically by splitting the original image into quadrants and shifting the center point to minimize $\rho$.
+
+\subsection{Gradient Information}
+
+Using gradient information can be helpful because now a vote only needs to be casted in the direction of the gradient and not over all possible points.
+
+\subsection{Discussion}
+
+Hough transforms can recognize any curve of the form $f(\mathbf{x}, \mathbf{a}) = 0$, where $\mathbf{a}$ is a parameter vector. For example, for a circle defined as 
+
+$$
+(x-a)^2 + (y-b)^2 = r^2
+$$
+
+There are three parameters and as such the parameter space will be 3-dimensional.
+
+The merit in using the hough transform is that it works for broken lines and curves, and that it is insensitive to noise. However, with increasing amount of parameters it becomes computationally expensive to execute.
+
+\section{Generalized Hough Transform}
+\subsection{R-Table Generation}
 
  \section{Representations of 2D Geometric Structures}
  \subsection{Boundary Representations}
