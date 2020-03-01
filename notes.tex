@@ -761,13 +761,103 @@ GHT is only able to detect with one orientation and scale at a time, which is ki
 
   \vspace{5mm}
 
-  
+  The MAT Algorithm
+  \begin{enumerate}
+    \item {At each "1", find the largest disk centered at the current point and only contains "1"s}
+    \item {Find the maximal points where the disk is not entirely within another point q's disk}
+  \end{enumerate}
+
+  \vspace{2mm}
+
+  The union of all the disks represents the object.
+  This method is noise sensitive.
 
 \subsection{Distances}
+
+\begin{enumerate}
+  \item {Euclidean distance ($L_2$ norm)}
+  
+  $d_e(\vec p_1, \vec p_2) = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}$
+
+  \item {City Block (Manhattan) ($L_1$ norm)}
+  
+  $d_4(\vec p_1, \vec p_2) = \mid x_1 - x_2 \mid + \mid y_1 - y_2 \mid$
+
+  \item {Chess Board}
+  
+  $d_8(\vec p_1, \vec p_2) = max\{\mid x_1 - x_2 \mid + \mid y_1 - y_2 \mid\}$
+
+\end{enumerate}
+
+y = \{$y_1, y_2, ..., y_n$\}
+
+\begin{itemize}
+  \item {Mean Square Error (MSE)}
+  
+  MSE = $\frac{\sum_{t=1}^n (\hat{y_t} - y_t)^2}{n}$
+
+  \item {Mean Absolute Error (MAE)}
+  
+  MAE = $\frac{\sum_{t=1}^n \mid \hat{y_t} - y_t \mid}{n}$
+
+  \item {Root Mean Square Error (RMSE)}
+  
+  RMSE = $\sqrt{\frac{\sum_{t=1}^n (\hat{y_t} - y_t)^2}{n}}$
+
+  \item {p-norm}
+  
+  Let p $\geq$ 1 be a real number.
+
+  $||\vec x_p|| = (\sum_{i=1}^n \mid x_i \mid ^p)^(\frac{1}{p})$
+
+\end{itemize}
+
 \subsection{Feature Space}
-\subsection{K-means Clustering}
+
+Every token is identified by characteristics known as features, such as position, color, texture, motion vector, size, and orientation.
+
+A feature space is the choice of features and how they are quantified, where each token is represented by a point.
+
+Token similarity is defined by a feature vector, which is the distance between points.
+
+\subsection{K-means Clustering (Lloyd's Algorithm)}
+
+\begin{enumerate}
+  \item {Initialization}
+  
+  Partition the N points in the feature space into K intial sets, and calculate the initial set centers $m_1, ..., m_k$.
+
+  \item {Repeat}
+  
+  \begin{enumerate}
+    \item {Assign each of the N points, $x_j$, to clusters by the nearest $m_i$, making sure that no cluster is empty}
+    \item {Recompute mean $m_i$ of each cluster}
+    \item {If no mean has changed, stop}
+  \end{enumerate}
+
+\end{enumerate}
+
 \subsection{Mean Shift Algorithm}
+
+Mean shift locates the maxima of a density function, given discrete data sampled from that function.
+
+Start with an initial estimate x. A kernel function $K(x_i-x)$ determines the weights of points $x_i$ for re-estimation of the mean.
+
+The weighted mean is $m(x) = \frac{\sum _{x_i \in N(x)}[K_h(x_i-x) \cdot x_i]}{\sum _{x_i \in N(x)}K_h(x_i-x)}$
+
+During each iteration, the vector that connects the old x and the new x (m(x)) is often called the Mean Shift Vector. This vector always points in the direction of the maximum increase in density.
+
+\vspace{2mm}
+
+Mean Shift can be used for Edge Preserving Smoothing and Image Segmentation. For Image Segmentation, the initial x's can be some random pixels from the grid. The feature space is the Space-Range domain, where Space is the coordinates of each pixel, and Range is the grayscale or color vector of the pixel.
+
+\vspace{2mm}
+
+The kernel function would be the product of the two kernel functions for each part of the domain, one for Space and one for Range. After Mean Shift filtering, modes can be merged if they are closer than $h_s$ in the Space domain and $h_r$ in the Range domain. We can also merge regions that are too small.
+
 \subsection{Gaussian and Laplacian Pyramids}
+
+The process of generating an image from the image before it is called a REDUCE operation. Both the resolution and the density are decreased.
 
 \section{Representations of 3D Structures}
 \subsection{Surface Representations}
