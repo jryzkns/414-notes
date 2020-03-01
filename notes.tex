@@ -873,14 +873,85 @@ A set of bandpass filtered images $L_1, L_2, ..., L_N-1$ can be characterized as
 \section{Representations of 3D Structures}
 \subsection{Surface Representations}
 \subsubsection{Polyhedral Surfaces}
-\subsubsection{Generalized Cylinders}
+
+The winged-edged representation includes the following:
+
+\begin{itemize}
+  \item {face node: face characteristics (surface, normal, reflectance, color, etc.)}
+  \item {edge node: topological information for faces, edges, and vertices, as well as additional information}
+  \item {vertex node: 3D vertex location}
+\end{itemize}
+
+The Theorem of Euler states that for every polyhedron, V-E+F=2, where V is the number of vertices, E is the number of edges, and F is the number of faces.
+
+Also, there are B-splines, point clouds, and 3D (polygonal) meshes.
+
+\vspace{2mm}
+
+For shape distribution, there are 3 steps.
+\begin{enumerate}
+  \item {Distance is measured between two random points on the surface}
+  \item {A 1D histogram is generated to count the number of pairs at different distances}
+  \item {The histogram is normalized in the end}
+\end{enumerate}
+
+To spin an image, there are 3 steps.
+\begin{enumerate}
+  \item {For each vertex, an object centered coordinate ($\alpha, \beta$) is computed based on the distance $\alpha$ along the axis and the distance $\beta$ from the axis}
+  \item {A 2D accumulator array is created, and is incremented for each vertex that can be supported by the spin image}
+  \item {The final histogram is normalized}
+\end{enumerate}
+
+\subsubsection{Generalized Cylinders (GC)}
+
+A Generalized Cylinder (GC) has a planar cross section, a space curve spine, and a sweep rule (constant, linear contraction, etc.).
+
+In other words, a GC has a spine that defines the axis of the cylinder and has a cross section that is swept along that axis by a sweep rule.
+
 \subsection{Volumetric Representations}
 \subsubsection{Spatial Occupancy Array}
+
+Voxels are the simplest representation, but are very wasteful. They can use sparse arrays, and one of the dimensions can be run-length coded.
+
 \subsubsection{Octree}
+
+Octrees are the 3D version of quadtrees, where each node has exactly 8 children. When given a $2^n \cdot 2^n \cdot 2^n$ array of voxels, the dimension of the array is $2^n$. A node at level i for an octree that has an array with dimension of $2^n$ corresponds to an element which contains $2^i \cdot 2^i \cdot 2^i$ voxels.
+
+"Void" = "white", "Full" = "black", "Mixed" = "gray", if we were to match the values in a quadtree to those in an octree.
+
+Union, intersection, and complement of octrees can be solved recursively.
+
 \subsubsection{Constructive Solid Geometry}
+
+Solids are represented as compositions of other solids via set operations. Primitive solids are entities such as arbitrarily scaled rectangular blocks, cylinders, cones, and spheres of arbitrary radius.
+
+A CSG representation involves primitive solids and set operators for combination and motion.
+
+$<CSG Rep> ::== <primitive solid> | MOVE <CSG Rep> BY <Motion Params> | <CSG Rep> <Combine Op> <CSG Rep>$
+
+Regularity is an important property of any set of points that models a solid. In a space, a set X is regular if X = kiX, where k and i are the closure and interior operators. This means that a regular set has no isolated or dangling boundary points.
+
+Regularized operators are
+$X <OP> * Y =  r(X <OP> Y)$
+
+If primitives are unbounded, then it is difficult to check for the boundedness of an object. However, if they are bounded, then any CSG representation is a valid volume representation.
+
 \subsubsection{Shape Histogram}
+
+\begin{enumerate}
+  \item {Build the volumetric representation by converting the surface into a set of voxels}
+  \item {The space is transformed to a spherical coordinate system around the center of mass of the model}
+  \item {A 3D spherical histogram is constructed for accumulating voxels in the volume representation}
+  \item {The histogram is normalized}
+\end{enumerate}
+
 \subsection{Viewer-Centered Representation}
+
+Viewer-Centered Representation models 3D objects through a set of views ($2 \frac{1}{2}$ sketch - depth map, etc.). It is a bottom-up approach, but each 3D object must be represented by many views.
+
 \subsection{Object-Centered Representation}
+
+Object-Centered Representation involves expressing object geometry with respect to a reference frame, such as GCs, Octrees, Shape Histograms, etc. It is a top-down approach, and it is often better for invariance (translation, rotation, and scale).
 
 \end{multicols}
 
