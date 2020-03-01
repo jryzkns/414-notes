@@ -664,113 +664,97 @@ After the R-table is generated, the voting algorithm is as follows:
 
 GHT is only able to detect with one orientation and scale at a time, which is kind of inefficient. Peak detection with the votes is also non-trivial. It can be used in multiple stages to construct more complex contours.
 
- \section{Representations of 2D Geometric Structures}
- \subsection{Boundary Representations}
- \subsubsection{Polyline}
+\section{Representations of 2D Geometric Structures}
+\subsection{Boundary Representations}
+\subsubsection{Polyline}
 
-  Polyline can be used to apporximate curves and contours accurately.
-  
-  The algorithm for curve approximation using polyline involves iteratively going through vertices, and adding new vertices if the maximum distance between the polyline and the shape is greater than $T_{max}$.
+A polyline representation can be used to apporximate curves and contours accurately, it is also known as "vertex-based shape coding". It consists of an ordered array of $(x_i, y_i)$ vertices that approximate the true contours, where each vertex denotes the next vertex in a closed loop in clockwise fashion.
 
-  For closed polylines, such as polygon, the area is $\frac{1}{2}\sum_{i=0}^{n-1}(x_{i+1}y_i + x_iy_{i+1})$.
+The algorithm for curve approximation using polyline involves iteratively going through vertices, and adding new vertices if the maximum distance between the polyline and the shape is greater than $T_{max}$.
 
- \subsubsection{Chain Code}
+Applying rotation on for a polyline representation requires applying a rotation matrix on every point of the representation.
 
-  Chain code is an economic coding method that has either 4 or 8 neighbours.
-  The derivative of the chain code is equivalent to the difference of the chain code modulo 4 (or 8).
-  A pro of this method is that it is rotation invariant.
+For a closed polyline representation of a contour, its area is defined as
 
-  For the area of an enclosed space:
-  For each element of the chain code in counterclockwise order, there are 4 cases
-  
-  \vspace{2mm}
-  
-  Case 0: area = area - y
+$$
+\frac{1}{2}\sum_{i=0}^{n-1}(x_{i+1}y_i + x_iy_{i+1})
+$$
 
-  \vspace{2mm}
+\subsubsection{Chain Code}
 
-  Case 1: y = y + 1
+Chain code is an economic coding method where contours are approximated with a chain of lines that either go in the 4 or 8 directions (called 4-neighbors or 8-neighbors) in a counterclockwise fashion. Each direction is enumerated from 0 to 3 or 7, and a chain code is represented as a list of these directions.
 
-  \vspace{2mm}
+The derivative of the chain code is equivalent to the difference of the chain code at a position with its previous position modulo 4 or 8.
 
-  Case 2: area = area + y
+Applying rotation for chain coding is easily achieved by uniformly adding a rotation value to each value in the chain-code.
 
-  \vspace{2mm}
+For the area of an enclosed by a 4-neighbor chain code, it can be computed in the following manner:
 
-  Case 3: y = y - 1
+\begin{quote}
 
- \subsubsection{Curvature Scale Space (CSS)}
+For each element of the chain code in counterclockwise order, there are 4 cases for each element:
 
-  Find the zero crossings of the image's contour (inflection points).
-  The positions of these inflection points are relative to the length of the contour curve.
-  The boundary function is convolved with a Gaussian kernel of increasing width.
-  At each $\sigma$, the curvature function is computed and the zero crossing points are identified and plotted.
-  As $\sigma$ increases, the contour will lose its inflection points and become a convex blob.
-  
-  \vspace{5mm}
-  
-  When $\sigma$ increases, no new inflection points are created, but their locations are shifted.
-  More prominent structures in the contour can survive large values of $\sigma$.
-  The localization problem of inflection points can be solved by tracking their locations in the scale-space image back to the original.
-  It is a robust method, that is also fast and compact.
-  CSS can be used for shape comparison, finding similarities and differences between images.
+\begin{itemize}
+  \item Case 0: area = area - y
+  \item Case 1: y = y + 1
+  \item Case 2: area = area + y
+  \item Case 3: y = y - 1
+\end{itemize}
 
-  \vspace{5mm}
+\end{quote}
 
-  In a shape context descriptor, the image is separated into several bins, and you count the number of points that fall within each bin. This displays a distribution of points relative to each point.
-  Solve for least cost assignments, $C_{ij}$ to get correspondences. And then use a template given by the correspondences.
+\subsubsection{Curvature Scale Space (CSS)}
 
- \subsection{Region Representations}
- \subsubsection{Spatial Occupancy Array}
+A curvature scale space (CSS) is a representation that identifies objects by inflection points (ie. zero crossings) on their contour. The location of the inflection points are expressed as a function of the arclength of the contour. 
 
-  This method is simple and results in a sparse array.
+Additionally, The CSS of a contour is computed multiple times, each time after a gaussian filtering is applied to the arc-length function with increasing $\sigma$, until no more inflection points are found. 
 
- \subsubsection{Axis-based Representations}
+With more filtering, weaker details are preserved and as such less inflection points will be seen. The inflection points that last the longest often point toward the most prominent features.
 
-  This method involves putting images on a grid and figuring out which x values correspond with a specific y value of the image (vice versa for x-axis).
-  A con of this method is that it usually requires a combination of both X- and Y-axis representations.
+After computing CSS with all of the increasing $\sigma$, we obtain a graph that has many curves that grow upwards. The change in position in each curve as it grows upwards reflects the change of location of its inflection point as greater $\sigma$ is applied.
 
- \subsubsection{Quad-trees}
- % split and merge
+The merit in this representation is that it is scale invariant (inflection points are parametrized by arc-length), rotation invariant (the CSS of a item and its rotated version are the same but rotated as well), and it is robust to noise due to multiple stages of filtering when constructing the model.
 
-  A pro of this method is that it is a hierarchical tree representation. A con is that the representation depends on the chosen grid size. Also objects can't be easily shifted or scaled.
-  
-  \vspace{5mm}
+\subsubsection{Shape Context Descriptor}
 
-  Algorithm: Split and Merge
+A shape context descriptor is a compact representation where the template image (containing its boundaries) is separated into partitions (bins). The number of points that fall within each bin forms a distribution.
 
-  \vspace{5mm}
+To match an object with Shape Context Descriptors, solve for least cost assignment to get correspondences, and then use a template given by the correspondences.
 
-  This algorithm uses a quad tree for region growing. You start at an intermediate level, such as 64 x 64, then do a bottom up process (merge), and a top down process (split).
-  During quad-tree construction, pixels in the pyramid are either black or white.
-  You intersect two quad trees R1 and R2, and do the following steps:
-  If R1 is black, then return R2. If R1 is white, return white. If R2 is black, return R1. If R2 is white, return white.
-  Next, you determine the elements of the new tree, $R_{new}$.
-  The NW element of $R_{new}$ is the intersect between NW R1 and NW R2.
-  The NE element of $R_{new}$ is the intersect between NE R1 and NE R2.
-  The SW element of $R_{new}$ is the intersect between SW R1 and SW R2.
-  The SE element of $R_{new}$ is the intersect between SE R1 and SE R2.
+\subsection{Region Representations}
+\subsubsection{Spatial Occupancy Array}
 
- \subsubsection{Medial Axis Transform (MAT)}
+This method is simple and results in a sparse array.
 
- % continue from here from "distances"
+\subsubsection{Axis-based Representations}
 
-  MAT is a thinning algorithm to get the skeleton of the region.
-  For each point p, find the closest neighbors on the region boundary.
-  If more than one boundary point have the minimum distance from p, then p is on the skeleton (Medial Axis) of the region.
+This method involves putting images on a grid and figuring out which x values correspond with a specific y value of the image (vice versa for x-axis). 
 
-  \vspace{5mm}
+The representation is a list of lists. Each list starts with the value at the primary axis, and then each pair of values that comes after is the starting and end value of the other axis (ex. $(y, x_{in}, x_{out}, x_{in}, x_{out})$).
 
-  The MAT Algorithm
-  \begin{enumerate}
-    \item {At each "1", find the largest disk centered at the current point and only contains "1"s}
-    \item {Find the maximal points where the disk is not entirely within another point q's disk}
-  \end{enumerate}
+This method is inefficient for specific cases and usually requires a combination of both X- and Y-axis representations.
 
-  \vspace{2mm}
+\subsubsection{Quad-trees}
 
-  The union of all the disks represents the object.
-  This method is noise sensitive.
+Using quad trees is a space efficient method where more detail is added where needed. It is a hierarchical tree representation, but it depends on the chosen grid size. Quad tree representations also can't be easily shifted or scaled.
+
+A quad tree is a complete 4-ary tree where node is either a grey, white, or black pixel. Black pixels denote the region is contained, white pixels denote that it is not a region, and only grey pixels have children. 
+
+To form a Quad tree representation of a region, we can start at an intermediate level, and apply a split and merge technique. 
+
+For splitting, the representation takes a particular node and colors it grey. Then the node forms 4 children and colors each accordingly based on the region at that location. 
+
+For merging, the intersection of two quad trees is performed. Here we outline the procedure for intersecting two quad trees, which takes as input two nodes $R_1, R_2$ (starting as root nodes, this recursively applies to the whole tree). If either node is black or white, then that color is the resulting color. Note that black has higher precedence than white. Otherwise if both nodes are grey pixels, then the intersection between all of their 4 children are computed in the same manner.
+
+\subsubsection{Medial Axis Transform (MAT)}
+
+With a given boundary, a medial axis transform can effectively compute the skeleton of the region.
+
+The idea for how a representation works is that for each point p, if there are more than one equidistant neighbors on the region boundary, it is a medial axis and as such part of the region's skeleton.
+
+The construction of such skeleton is as follows: At each point $i$ in the region, find the largest disk centered at $i$ and only contained by the region. A point $p$ is maximal if its disk is not completely contained without another point $i$'s disk. The union of all the disks represents the object.
+
+While generating skeletons of regions is very helpful this method is noise sensitive.
 
 \subsection{Distances}
 
