@@ -855,9 +855,36 @@ Mean Shift can be used for Edge Preserving Smoothing and Image Segmentation. For
 
 The kernel function would be the product of the two kernel functions for each part of the domain, one for Space and one for Range. After Mean Shift filtering, modes can be merged if they are closer than $h_s$ in the Space domain and $h_r$ in the Range domain. We can also merge regions that are too small.
 
-\subsection{Gaussian and Laplacian Pyramids}
+\subsection{Gaussian Pyramids}
 
 The process of generating an image from the image before it is called a REDUCE operation. Both the resolution and the density are decreased.
+
+$G_l(i,j) = \sum _{m,n = -2}^2 \sum _{m,n = -2}^2 w(m,n) G_{l-1} (2i+m, 2j+n)$
+
+The function w is the generating kernel, and it agrees to four constraints.
+
+\begin{enumerate}
+  \item {Separable: $w(m,n) = \hat{w}(m)\hat{w}(n)$}
+  \item {Normalized: $\sum \hat{w}(m) = 1$}
+  \item {Symmetric: $\hat{w}(m) = \hat{w}(-m)$}
+  \item {Equal Contribution: a+2c = 2b}
+\end{enumerate}
+
+The second operation, which is the inverse of the REDUCE operation, is called the EXPAND operation. This operation increases the size of an image from M+1 to 2M+1.
+
+$G_{l,0} = G_l$
+
+$G_{l,k} = EXPAND[G_{l,k-1}]$
+
+$G_{l,k}(i,j) = 4(\sum \sum)_{m,n = -2}^2 w(m,n) G_{l,k=1}(\frac{i+m}{2}, \frac{j+n}{2})$ 
+
+Note: only terms for when i+m and j+n are integers contribute to the sum.
+
+When EXPAND is applied to an image l times, $2^l-1$ points are made between each pair of neighbouring samples.
+
+\subsection{Laplacian Pyramids}
+
+A set of bandpass filtered images $L_1, L_2, ..., L_N-1$ can be characterized as the differences between low-pass images at successive levels of a Gaussian pyramid. An important feature of the Laplacian pyramid is that the original image can be found by summing up pyramid levels.
 
 \section{Representations of 3D Structures}
 \subsection{Surface Representations}
