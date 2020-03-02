@@ -840,9 +840,9 @@ K-mean clustering is a method of classification of points in a feature space. ef
 \begin{enumerate}
 \item Partition the $N$ points in the feature space into $K$ intial sets. Calculate the initial set centroids $m_1, ..., m_k$.
 
-\item While $m_1, ..., m_k$ has not stabilized, do the following:
+\item While $m_1, ..., m_k$ has not stabilized, do:
 \begin{enumerate}
-\item {Assign each of the N points, $x_j$, to clusters by the nearest $m_i$, making sure that no cluster is empty}
+\item {Assign each of the $N$ points to their nearest $m_i$, making sure that no cluster is empty}
 \item {Recompute mean $m_i$ of each cluster}
 \end{enumerate}
 \end{enumerate}
@@ -875,36 +875,58 @@ For Image Segmentation, the initial x's can be some random pixels from the grid.
 
 After Mean Shift filtering, modes can be merged if they are closer than $h_s$ in the Space domain and $h_r$ in the Range domain. We can also merge regions that are too small.
 
-\subsection{Gaussian Pyramids}
+\subsection{Gaussian Pyramid}
 
-The process of generating an image from the image before it is called a REDUCE operation. Both the resolution and the density are decreased.
+A Gaussian pyramid contains successively lower resolutions of an image.The process of generating the next image in the pyramid from the image before it is called a REDUCE operation. Both resolution and density are decreased.
 
-$G_l(i,j) = \sum _{m,n = -2}^2 \sum _{m,n = -2}^2 w(m,n) G_{l-1} (2i+m, 2j+n)$
+$$
+G_l(i,j) = \sum_{m = -2}^2 \sum_{n = -2}^2 w(m,n) G_{l-1} (2i+m, 2j+n)
+$$
 
-The function w is the generating kernel, and it agrees to four constraints.
+The function $w(m, n)$ is called a generating kernel (which is usually a matrix), and it has to satisfy the followng constraints:
 
 \begin{enumerate}
   \item {Separable: $w(m,n) = \hat{w}(m)\hat{w}(n)$}
   \item {Normalized: $\sum \hat{w}(m) = 1$}
   \item {Symmetric: $\hat{w}(m) = \hat{w}(-m)$}
-  \item {Equal Contribution: a+2c = 2b}
+  \item {Equal Contribution: $a+2c = 2b$}
 \end{enumerate}
 
-The second operation, which is the inverse of the REDUCE operation, is called the EXPAND operation. This operation increases the size of an image from M+1 to 2M+1.
+After combining the second and fourth constraints, we have the following:
 
-$G_{l,0} = G_l$
+\[
+\begin{aligned}
+  a &= free\\
+  b &= 1/4\\
+  c &= 1/4 - a/2
+\end{aligned}
+\]
 
-$G_{l,k} = EXPAND[G_{l,k-1}]$
+The inverse of the REDUCE operation is called the EXPAND operation. This operation increases the size of an image from $M+1$ to $2M+1$. Let $G_{l,k}$ be the image obtained by applying EXPAND to $G_l$ $k$ times, then $G_{l,0} = G_{l}$ and
 
-$G_{l,k}(i,j) = 4(\sum \sum)_{m,n = -2}^2 w(m,n) G_{l,k=1}(\frac{i+m}{2}, \frac{j+n}{2})$ 
+$$
+G_{l,k}(i,j) = 4\sum_{m = -2}^2 \sum_{n = -2}^2 w(m,n) G_{l,k-1}(\frac{i+m}{2}, \frac{j+n}{2})
+$$
 
-Note: only terms for when i+m and j+n are integers contribute to the sum.
+In this expression, only terms for when $(i+m)/2$ and $(j+n)/2$ are integers contribute to the sum $G_{l,k}(i,j)$.
 
-When EXPAND is applied to an image l times, $2^l-1$ points are made between each pair of neighbouring samples.
+Note that $G_{l,1}$ is the same size as $G_{l-1}$, and $G_{l,l}$ is the same size as the original image.
+
+When EXPAND is applied to an image $l$ times, $2^l-1$ points are made between each pair of neighbouring samples.
 
 \subsection{Laplacian Pyramids}
 
-A set of bandpass filtered images $L_1, L_2, ..., L_N-1$ can be characterized as the differences between low-pass images at successive levels of a Gaussian pyramid. An important feature of the Laplacian pyramid is that the original image can be found by summing up pyramid levels.
+With a series of Gaussian Pyramid images, the corresponding laplacian pyramid images can be easily derived with the following algorithm:
+
+For values $l$ from 0 to $N$, the laplacian pyramid image $L_l$ is defined as $G_l - G_{l+1,1}$, with $L_N = G_N$. In essence, each laplacian pyramid image is a difference of Gaussian pyramid images.
+
+An important feature of the Laplacian pyramid is that the original image can be found by summing up pyramid levels. That is:
+
+$$
+G_0 = \sum_{l=0}^{N}L_{ll}
+$$
+
+Due to the fact that laplacian images have this property, and each EXPAND operation effectively subtracts an average of neighboring values, the image data is compressed with the pixel to pixel correlation removed and values shifted toward zero. This effectively reduces the information intropy of each image and thus reduces transmission bandwidths.
 
 \section{Representations of 3D Structures}
 \subsection{Surface Representations}
