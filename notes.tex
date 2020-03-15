@@ -1,14 +1,14 @@
 \documentclass{article}
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
-\usepackage[landscape, margin=0.25in]{geometry} % lots more margin
+\usepackage[margin=0.75in]{geometry} % lots more margin
 \pagenumbering{gobble} % ignore page numbers
 
 \usepackage{titling}
 \setlength{\droptitle}{-0.75in}
 
 \title{CMPT 414 review notes}
-\author{Jack Zhou, Melanie Xu}
+\author{}
 \date{}
 
 \setlength{\parindent}{0cm}
@@ -29,9 +29,9 @@
 
 \begin{document}
 
-% \maketitle
+\maketitle
 
-\begin{multicols}{3}
+\begin{multicols}{2}
 
 \section{Image Processing}
 
@@ -50,7 +50,7 @@ One way to address this issue is to stretch the histogram so that it occupies th
 The algorithm is as follows. \texttt{p\_0} and \texttt{p\_m} are the minimum and maximum pixel intensities respectively.
 
 \begin{verbatim}
-function stretch(img, a, b, p_0, p_m)
+function linear_stretch (img, a, b, p_0, p_m)
   for pix in img:
     if     pix <= a: pix = p_0
     elseif pix >= b: pix = p_m
@@ -259,15 +259,7 @@ Our goal is to minimize $d^2(x,y)$. $f(x+k,y+s)^2$ is independent from t, and $t
 
 \section{Edge Detection}
 
-Edges are defined as intensity discontinuities in images.
-
-\subsection{Criteria for Good Edge Detection}
-\begin{itemize}
-\itemsep0em
-\item Always find real edges, not false ones
-\item Good localization, where found edges are as close to the original as possible  
-\item Unique Output
-\end{itemize}
+We define edges as intensity discontinuities in images. Using edge information is useful for many computer vision applications. We will discuss many methods of edge detection in this section.
 
 \subsection{Gradient-Based Methods}
 
@@ -321,7 +313,7 @@ $$
 
 This method includes providing directional information and uses local averages to reduce noise. However, the edge width can be greater than 1, which means there isn't a single output.
 
-The Sobel operator is similar to Prewitt's, except it places a stronger emphasis on the weighting of the direction each mask is meant for.
+The Sobel operator is similar to Prewitt's, except it places a stronger emphasis on the weighting of the direction each mask is meant for. Below are the corresponding masks to compare with their Prewitt counterparts:
 
 $$
 \begin{bmatrix}
@@ -336,9 +328,15 @@ $$
 \end{bmatrix}
 $$
 
-\subsection{Laplacian/Zero Crossings}
+The $0^{\circ}$ and $90^{\circ}$ Sobel operators are often used to generate gradient information.
 
-This laplacian (second derivative) edge operator we describe here is different from the sharpening operator. Namely, the laplacian edge operator is 
+\subsection{Laplacian-Based Methods}
+
+Instead of working with the first derivative, we can work with the second derivative (which is a laplacian) to derive edge information.
+
+\subsubsection{Zero Crossings}
+
+The laplacian edge operator we describe here is different from the sharpening operator. Namely, the laplacian edge operator is 
 
 $$
 \begin{bmatrix}
@@ -350,36 +348,54 @@ $$
 
 Whereas the laplacian sharpening operator has a midle entry of 5 instead of 4.
 
-After applying the operator, we look for zero-crossings in the resulting image to determine where the edges are. 
+After applying the operator, we look for zero-crossings in the resulting image to determine where the edges are. Zero crossings are simply where there is a negative value and a neighboring positive value.
 
-Zero crossings are simply where there is a negative value and a neighboring positive value.
-
-\subsection{Marr's Operator (LOG/DOG)}
+\subsubsection{Marr's Operator}
 
 Marr's Operator applies a gaussian blur $G$ to the image $f$ before calculating the laplacian to find zero crossings:
 
-\[
-\begin{aligned}
-  \nabla^2 (G(x,y) &* f(x,y))\\
-  (\nabla^2 G(x,y)) &* f(x,y)
-\end{aligned}  
-\]
+$$
+\nabla^2 (G(x,y) * f(x,y))
+$$
 
-Thus the operator is also called a laplacian of gaussian (LOG) operator. The gaussian's $\sigma$ can be tuned for different spatial frequencies.
+Due to a property for convolutions, the above is equivalent to 
+
+$$
+(\nabla^2 G(x,y)) * f(x,y)
+$$
+
+Thus operator is also called a laplacian of gaussian (LOG) operator. The gaussian's $\sigma$ can be tuned for different spatial frequencies.
 
 Additionally, a laplacian of gaussian can be approximated by the difference between two gaussians, called a difference of gaussians (DOG).
 
+\subsection{Marr's Edge Operator}
+
+Given an image f(x,y), edges can be found by locating the zero crossings from \(D^2(G(x,y)*f(x,y))\), where G is a Gaussian function and $D^2$ is the second derivative.
+Derivative rule for convolution: \(D^2(G*f) = D^2G * f\).
+
 \subsection{Canny Edge Operator}
 
+After discussing previous edge detection operators, we collect some thoughts to approach another edge operator.
+
+\subsubsection{Criteria for Good Edge Detection}
+\begin{itemize}
+      \item Always find real edges, not false ones
+  
+      \item Good localization, where found edges are as close to the original as possible
+  
+      \item Unique Output
+\end{itemize}
+
+\subsubsection{Stages in Canny Edge Detection}
+
 \begin{enumerate}
-\itemsep0em
 \item \textbf{Smoothing}
 
 Apply Gaussian Blur to the image $I' = G*I$.
 
 \item \textbf{Gradient Operator}
 
-Use $0^{\circ}$ and $90^{\circ}$ Sobel operators to generate $\frac{\partial I'}{\partial x}$ and $\frac{\partial I'}{\partial y}$. Using these, generate $S$ and $theta$.
+Use the $0^{\circ}$ and $90^{\circ}$ Sobel operators to generate $\frac{\partial I'}{\partial x}$ and $\frac{\partial I'}{\partial y}$. Using these, generate $S$ and $theta$.
 
 \item \textbf{Non-maximum Suppression}
 
@@ -391,96 +407,100 @@ For each pixel $p$ in $S$, examine two neighbors along the direction of $\theta$
 
 Double thresholding determines the strength of each pixel, whether it's weak, strong, or irrelevant.
 
-There are two thresholds, a high threshold $Th_h$ to tell apart strong and weak edge pixels. A low threshold $Th_s$ tells apart weak and irrelevant pixels. Strong and weak pixels are given particular values. The resulting matrix will only have three unique values.
+There are two thresholds, a high threshold $Th_h$ to tell apart strong and weak edge pixels. A low threshold $Th_s$ is then used to tell apart weak and irrelevant pixels. Strong pixels are given a value, and weak pixels are given another value. The resulting matrix will only have three unique values.
 
 \item \textbf{Hysteresis Tracking}
 
-% This is used to determine if weak edge pixels are going to be transformed into strong edge pixels and included in the final edge map. Otherwise they are discarded.
+This is used to determine if weak edge pixels are going to be transformed into strong edge pixels and included in the final edge map. Otherwise they are discarded.
 
-If a weak edge pixel has at least one strong edge pixel surrounding it, then it is turned into a strong pixel. Otherwise it is discarded.
+If a weak edge pixel has at least one strong edge pixel surrounding it, then it is turned into a strong pixel.
 
 The final edge map is defined as the map of all the strong edge pixels.
 
 \end{enumerate}
 
-% \section{Regions and Segmentation}
+\section{Regions and Segmentation}
 
-% A region is a group of connected pixels with similar properties in an image.
+A region is a group of connected pixels with similar properties in an image.
 
-% \subsection{Image Segmentation}
+\subsection{Image Segmentation}
 
-% Image segmentation is a process to divide an image into regions. It can be done in a manner that is region-based, edge-based, or in a hybrid approach.
+Image segmentation is a process to divide an image into regions. It can be done in a manner that is region-based, edge-based, or in a hybrid approach.
 
-% Some of the methods for Image Segmentation are as follows
-% \begin{itemize}
-%   \item {Thresholding}
-%   \item {Blob colouring (for binary images)}
-%   \item {Split and Merge}
-%   \item {K-Means}
-%   \item {Mean Shift}
-% \end{itemize}
+Some of the methods for Image Segmentation are as follows
+\begin{itemize}
+  \item {Thresholding}
+  \item {Blob colouring (for binary images)}
+  \item {Split and Merge}
+  \item {K-Means}
+  \item {Mean Shift}
+\end{itemize}
 
-% \subsection{Gestalt Psychology and Human Perception}
+\subsection{Gestalt Psychology and Human Perception}
 
-% Grouping is the key to visual perception. The Law of Pragnanz in Gestalt psychology states that people perceive ambiguous or complex images as the simplest form possible.
+Grouping is the key to visual perception. The Law of Pragnanz in Gestalt psychology states that people perceive ambiguous or complex images as the simplest form possible.
 
-% Here are some of the heuristics that can be used to group items together.
-% \begin{multicols}{3}
-% \begin{itemize}
-%   \item {Proximity}
-%   \item {Similarity}
-%   \item {Common Fate}
-%   \item {Common Region}
-%   \item {Parallelism}
-%   \item {Symmetry}
-%   \item {Continuity}
-%   \item {Closure}
-%   \item {Familiar Shapes}
-% \end{itemize}
-% \end{multicols}
+Here are some of the heuristics that can be used to group items together.
+\begin{multicols}{3}
+\begin{itemize}
+  \item {Proximity}
+  \item {Similarity}
+  \item {Common Fate}
+  \item {Common Region}
+  \item {Parallelism}
+  \item {Symmetry}
+  \item {Continuity}
+  \item {Closure}
+  \item {Familiar Shapes}
+\end{itemize}
+\end{multicols}
 
 \section{Texture Analysis}
 
-Textures are defined as repeated patterns of local intensity variations, and it depends on the resolution. There are three issues related to texture analysis:
+Textures are defined as repeated patterns of local intensity variations, and it depends on the image resolution.
+There are three issues related to texture analysis:
 
+There are three main tasks in texture analysis:
 \begin{itemize}
-  \itemsep0em
   \item {texture classification}
   \item {texture segmentation}
   \item {shape from texture}
 \end{itemize}
 
-\subsection{Spatial Gray Level Dependence}
-bruh % do not remove this bruh or the page will collapse onto itself!
-Spatial gray level dependence is a statistical method utilizing a gray level co-occurence matrix $P$. It is a $M \times M$ where $M$ is the amount of gray levels. $P$ serves as a tally of pixel-value pairs that follow a predefined pixel structure $\mathbf{d}$. Due to the particularity of $\mathbf{d}$, $P$ is not symmetric. $P$ is also normalized, and as such treated as a pmf.
+\subsection{Statistical Methods}
+
+\subsubsection{Spatial Gray Level Dependence Method}
+
+The spatial gray level dependence method utilizes a gray level co-occurence matrix $P$. It is a $M \times M$ where $M$ is the amount of gray levels. $P$ serves as a tally of pixel-value pairs that follow a predefined pixel structure $\mathbf{d}$. Due to the particularity of $\mathbf{d}$, $P$ is not symmetric. $P$ is also normalized, and as such treated as a pmf.
 
 $\mathbf{d}$ is defined as a pair of integral values $(a,b)$ which is to be interpreted as "starting with pixel intensity $i$, move $a$ units to the right then $b$ units down to get to pixel intesity $j$". In other words, a valid pixel pair satisfying $\mathbf{d}$ is $f(x,y)=i$ and $f(x+a,y+b)=j$.
 
+With $P$, we can define some related measures:
+
 \begin{itemize}
-\itemsep0em
 \item Entropy: $-\sum_{i,j} P[i,j] \log P[i,j]$
 
-Level of randomness in the data that is being processed. Highest when all the elements are the same. In terms of texture, this means there is no preferred gray level.
+Entropy is the level of randomness in the data that is being processed. Entropy is highest when all the elements in P[i,j] are the same. In terms of images, this means that there is no preferred gray level.
 
 \item Energy:  $\sum_{i,j} P[i,j]^2$
 
-Sum of all of the matrix values combined.
+Energy simply defined as the sum of all of the matrix values combined
 
 \item Contrast: $\sum_{i,j} (i-j)^2 P[i,j]$
 
-Greater weighting on entries away from the diagonal due to $(i-j)^2$ factor. Texture has more pairs satisfying $\mathbf{d}$ with widely different gray levels.
+Contrast is a measure of variation in an image. The formula places greater weighting on entries away from the diagonal (due to the $(i-j)^2$ term), thus a high contrast would mean more pixel pairs satisfying $\mathbf{d}$ will be constructed with widely different gray level intensities.
 
 \item Homogeneity: $\sum_{i,j} \frac{P[i,j]}{ 1 + | i-j |}$
 
-Greater weighting on entries on the diagonal due to the $1 + |i - j|$ denominator. Texture has more pairs satisfying $\mathbf{d}$ with similar gray levels.
+Homogeneity is an opposite measure to Contrast. It places greater weighting on entries on the diagonal (due to the $1 + |i - j|$ denominator). A highly homogenous image would mean more pixel pairs satisfying $\mathbf{d}$ are constructed with similar gray level intensities.
 
 \end{itemize}
 
 One major downside of this method is that many $\mathbf{d}$'s have to be tried before arriving at a good one. It is also not good for textures that are composed of primitives of a certain shape/structure.
 
-\subsection{Gray Level Run Length}
+\subsubsection{Gray Level Run Length Method}
 
-Gray level run-length is a statistical method that utilizes a gray level run matrix $P_\theta$, where $P_\theta(i,j)$ is the number of times an image contains a run of length j for pixels with value i in a certain direction of $\theta$. Long runs can be expected for images with coarse texture.
+The gray level run-length method utilizes a gray level run matrix $P_\theta$, where $P_\theta(i,j)$ is the number of times an image contains a run of length j for pixels with value i in a certain direction of $\theta$. Long runs can be expected for images with coarse texture.
 
 With $P_\theta$, we can define some related measures. We define the following as a normalization factor for our measures:
 
@@ -491,14 +511,13 @@ $$
 where $N_g$ is the number of gray levels and $N_r$ is the number of run lengths
 
 \begin{itemize}
-\itemsep0em
 \item {Short run emphasis inverse moments}
 
 $$  
-\frac{1}{T_\theta} \cdot \sum_{i=1} ^{N_g} \sum_{j=1} ^{N_r} \frac{1}{j^2}P_\theta (i,j)
+\frac{1}{T_\theta} \cdot \sum_{i=1} ^{N_g} \sum_{j=1} ^{N_r} \frac{P_\theta (i,j)}{j^2}
 $$
 
-This measure emphasizes short runs of a gray level image by dividing by $j^2$.
+This measure emphasizes short runs of a gray level image by dividing by $j^2$. Short run emphasis is large when there are lots of short runs of the same intensity.
 
 \item {Long run emphasis moments}
   
@@ -506,7 +525,7 @@ $$
 \frac{1}{T_\theta} \cdot \sum_{i=1} ^{N_g} \sum_{j=1} ^{N_r} j^2 P_\theta (i,j)
 $$
 
-This measure emphasizes long runs of a gray level image by multiplying by $j^2$.
+This measure emphasizes long runs of a gray level image by multiplying by $j^2$. Long run emphasis is large when there are lots of long runs of the same intensity.
 
 \item {Gray level nonuniformity}
   
@@ -516,7 +535,7 @@ $$
 
 The sum inside of the brackets is the total number of runs for a certain gray level value. This value is large if the runs are not evenly distributed across different intensities.
 
-\item Run length nonuniformity
+\item {Run length nonuniformity}
   
 $$
 \frac{1}{T_\theta} \cdot \sum_{j=1} ^{N_r} \left(\sum_{i=1} ^{N_g} P_\theta (i,j)\right)^2
@@ -524,7 +543,7 @@ $$
 
 The sum inside the brackets is the total number of runs with a certain run length at a certain gray level. This value is large if intensities are not evenly distributed across different run lengths.
 
-\item Inverse of weighted average run length
+\item {Inverse of weighted average run length}
   
 $$
 T_\theta\left(\sum_{i=1}^{N_g} \sum_{j=1} ^{N_r} j \cdot P_\theta (i,j)\right)^{-1}
@@ -539,51 +558,52 @@ This measure puts more weight into longer run length.
 The basic assumption in structural methods is that textures are composed of primitives known as "texels".
 
 \begin{itemize}
-\itemsep0em
-\item {Works better than statistical methods if the primitives can be detected}
-\item {Geometric properties (size, elongation, orientation, etc.) of the primitives are important features}
-\item {Spatial relationship of the primitives based on the co-occurrence of these primitives can be further explored}
+  \item {Works better than statistical methods if the primitives can be detected}
+  \item {Geometric properties (size, elongation, orientation, etc.) of the primitives are important features}
+  \item {Spatial relationship of the primitives based on the co-occurrence of these primitives can be further explored}
 \end{itemize}
 
 For example, if we use an edge-based method, then the primitives are edges. The properties are orientation, gradient, and density. The spatial relationship is edge separations.
 
 \subsubsection{Tamura's Texture Measures}
 
-Tamura's features are based on psychophysical studies of the characterizing elements that are perceived in textures by humans. Some of those features include:
+Tamura's features are based on psychophysical studies of the characterizing elements that are perceived in textures by humans. Some of those features include"
 
 \begin{itemize}
-\itemsep0em
-\begin{multicols}{3}
-\item {Coarseness}
-\item {Contrast}
-\item {Directionality}
-\end{multicols}
+  \item {Coarseness}
+  \item {Contrast}
+  \item {Directionality}
 \end{itemize}
 
 \section{Classical Hough Transform}
 
-The Classical Hough Transform is good for detecting lines and curves. It exploits the dual spaces for analytical curves.
+The Classical Hough Transform is good for detecting lines and curves. It exploits the property that for analytical curves, dual spaces can be formed.
 
-For detecting a line, the most naive parametrization of a line is $y = mx + c$. The line $y = mx + c$ in $(x,y)$ space corresponds to a point in the $(m,c)$ space. Similarly, a line in $(m,c)$ space corresponds to a point in $(x,y)$ space. There are at least two points needed in $(x,y)$ space to identify a line, and as such two corresponding lines in $(m,c)$ space will intersect and form a point pinpointing the parameters $(m,c)$ needed to form the line in $(x,y)$ space.
+For detecting a line, the most naive parametrization of a line is $y = mx + c$. Suppose we have an $(x,y)$ space and a $(m,c)$ space. The line $y = mx + c$ in $(x,y)$ space corresponds to a point in the $(m,c)$ space. Similarly, a line in $(m,c)$ space corresponds to a point in $(x,y)$ space. There are at least two points needed in $(x,y)$ space to identify a line, and as such two corresponding lines in $(m,c)$ will intersect and form a point pinpointing the parameters $(m,c)$ needed to form a line in $(x,y)$ space.
+
+The disadvantage of this parametrization is that a vertical line have $m = \infty$, and that would imply a huge $(m, c)$ space.
 
 \subsection{Voting Algorithm}
 
 The hough transform uses a process of voting for potentional matches of the geometric object needed, and by indentifying the most voted parameters the object in question can be detected. The following outline follows line detection with the parametrization $y = mx + c$
 
 \begin{enumerate}
-\itemsep0em
-\item Form a voting space with max and min values of $c$ and $m$
-\item For each edge point $(x,y)$ with gradient magnitude $S$ greater than a set threshold, increment all points in the voting space that satisfies $c = -xm + y$
-\item Identify maxima and peaks in the voting space to find lines in the original image
+  \item Form a voting space with max and min values of $c$ and $m$
+  \item For each edge point $(x,y)$ with gradient magnitude $S$ greater than a set threshold, increment all points in the voting space that satisfies $c = -xm + y$
+  \item Identify maxima and peaks in the voting space to find lines in the original image
 \end{enumerate}
 
 \subsection{Polar parametrization of Lines}
 
-As mentioned before, vertical lines cause $m = \infty$, which makes implementing a voting space difficult. As such, we can reparametrize a line to be following polar coordinates instead. A line will be described by the tangent line to a circle of radius $\rho$ at angle $\theta$. The relationship between $x, y, \rho, \theta$ is described as $\rho = x\cos\theta+y\sin\theta$
+As mentioned before, vertical lines cause $m = \infty$, which makes implementing a voting space difficult. As such, we can reparametrize a line to be following polar coordinates instead. A line will be described by the tangent line to a circle of radius $\rho$ at angle $\theta$. The relationship between $x, y, \rho, \theta$ is described as the following:
+
+$$
+\rho = x\cos\theta+y\sin\theta
+$$
 
 Depending on the range of $\rho$ and $\theta$, we can have $0 \leq \theta \leq 2\pi$ with $0 \leq \rho$. Alternatively, we can also have $0 \leq \theta \leq \pi$ with $\rho$ being positive or negative.
 
-Because images are discrete entities, the margin of error grows the bigger as a point $(x,y)$ on a line goes further away from the origin: $\Delta \rho \approx d \Delta \theta$. One way to mitigate this issue is to perform this parametrization hierarchically by splitting the original image into quadrants and shifting the center point to minimize $\rho$.
+Because images are discrete entities, the margin of error grows the bigger as a point $(x,y)$ on a line goes further away from the origin: $\delta \rho \approx d \delta \theta$. One way to mitigate this issue is to perform this parametrization hierarchically by splitting the original image into quadrants and shifting the center point to minimize $\rho$.
 
 \subsection{Gradient Information}
 
@@ -591,24 +611,29 @@ Using gradient information can be helpful because now a vote only needs to be ca
 
 \subsection{Discussion}
 
-Hough transforms can recognize any curve of the form $f(\mathbf{x}, \mathbf{a}) = 0$, where $\mathbf{a}$ is a parameter vector. For example, for a circle defined as $(x-a)^2 + (y-b)^2 = r^2$ has three parameters and as such the parameter space will be 3-dimensional.
+Hough transforms can recognize any curve of the form $f(\mathbf{x}, \mathbf{a}) = 0$, where $\mathbf{a}$ is a parameter vector. For example, for a circle defined as 
+
+$$
+(x-a)^2 + (y-b)^2 = r^2
+$$
+
+There are three parameters and as such the parameter space will be 3-dimensional.
 
 The merit in using the hough transform is that it works for broken lines and curves, and that it is insensitive to noise. However, with increasing amount of parameters it becomes computationally expensive to execute.
 
 \section{Generalized Hough Transform}
 
-While classical Hough Transforms are ideal for analytical curves, it is unable to work with arbitrary curves. Generalized Hough Transform (GHT) works by detecting objects based on the shape of its boundary. It is a generalized form of template matching. It contains two stages: Modeling and Matching.
+While classical Hough Transforms are ideal for analytical curves, it is unable to work with arbitrary curves. Generalized Hough Transform (GHT) works by detecting objects based on the shape of its boundary. It is a generalized form of template matching. It contains two components: Modeling and Matching.
 
 \subsection{Modeling: R-Table Generation}
 
 A template that is given to GHT is transformed into an R-table. An R-table is a lookup table of differences from edge points to a reference point. An R-table is built in the following way:
 
 \begin{enumerate}
-\itemsep0em
-\item Determine template centroid $(x_c, y_c)$ as a reference point.
-\item Initialize R-table as $Q$ bins, where $Q$ is the amount of intervals to divide $0^{\circ}$ to $360^{\circ}$ into.
-\item For each edge point $(x, y)$ in the template, derive its gradient angle and compute $\phi$, which is the index of the bin that the entry belongs to.
-\item place $(\Delta x, \Delta y) = (x_c-x,y_c-y)$ in bin $\phi$,
+  \item Determine template centroid $(x_c, y_c)$ as a reference point.
+  \item Initialize R-table as $Q$ bins, where $Q$ is the amount of intervals to divide $0^{\circ}$ to $360^{\circ}$ into.
+  \item For each edge point $(x, y)$ in the template, derive its gradient angle and compute $\phi$, which is the index of the bin that the entry belongs to.
+  \item place $(\Delta x, \Delta y) = (x_c-x,y_c-y)$ in bin $\phi$,
 \end{enumerate}
 
 In the original formulation, the entries are $(r_i, \theta_i)$ values that denote distances and angles from the centroid. Storing simple differences allows for simpler calculations for reconstruction of centroid locations when there is a scale $s$ and rotation $\theta$:
@@ -619,21 +644,20 @@ $$
 
 \subsection{Matching: Voting Algorithm}
 
+After the R-table is generated, the voting algorithm is as follows:
+
 \begin{enumerate}
-\itemsep0em
-\item Generate edge map and gradient angles of the source image
-\item Initialize the Hough Space with the image dimensions
-\item For each edge pixel in the edge map:
-\begin{itemize}
-\itemsep0em
-        \item compute $\phi$ to determine the bin to look up in the model (with compensation for rotation)
-        \item For each entry in bin $\phi$:
-        \begin{itemize}
-        \itemsep0em
-                \item Compute a candidate location (with compensation for rotation and scaling) for the model
-                \item Cast a vote in the candidate location if it does not clip out of the image
-        \end{itemize}
-\end{itemize}
+  \item Generate edge map and gradient angles of the source image
+  \item Initialize the Hough Space with the image dimensions
+  \item For each edge pixel in the edge map:
+  \begin{itemize}
+          \item compute $\phi$ to determine the bin to look up in the model (with compensation for rotation)
+          \item For each entry in bin $\phi$:
+          \begin{itemize}
+                  \item Compute a candidate location (with compensation for rotation and scaling) for the model
+                  \item Cast a vote in the candidate location if it does not clip out of the image
+          \end{itemize}
+  \end{itemize}
 \end{enumerate}
 
 \subsection{Discussion}
@@ -641,19 +665,24 @@ $$
 GHT is only able to detect with one orientation and scale at a time, which is kind of inefficient. Peak detection with the votes is also non-trivial. It can be used in multiple stages to construct more complex contours.
 
 \section{Representations of 2D Geometric Structures}
-\subsection{Polyline}
+\subsection{Boundary Representations}
+\subsubsection{Polyline}
 
-A polyline representation can be used to apporximate curves and contours accurately. It consists of an ordered array of $(x_i, y_i)$ vertices that approximate the true contours, where the vertices form a closed loop in clockwise fashion.
+A polyline representation can be used to apporximate curves and contours accurately, it is also known as "vertex-based shape coding". It consists of an ordered array of $(x_i, y_i)$ vertices that approximate the true contours, where each vertex denotes the next vertex in a closed loop in clockwise fashion.
 
 The algorithm for curve approximation using polyline involves iteratively going through vertices, and adding new vertices if the maximum distance between the polyline and the shape is greater than $T_{max}$.
 
 Applying rotation on for a polyline representation requires applying a rotation matrix on every point of the representation.
 
-For a closed polyline representation, its area is defined as $\frac{1}{2}\sum_{i}(x_{i+1}y_i + x_iy_{i+1})$
+For a closed polyline representation of a contour, its area is defined as
 
-\subsection{Chain Code}
+$$
+\frac{1}{2}\sum_{i=0}^{n-1}(x_{i+1}y_i + x_iy_{i+1})
+$$
 
-Chain code is an economic coding method where contours are approximated with a chain of lines that either go in the 4 or 8 directions (called neighbors) in a counterclockwise fashion. Each direction is enumerated from 0 to 3 or 7, and a chain code is represented as a list of these directions.
+\subsubsection{Chain Code}
+
+Chain code is an economic coding method where contours are approximated with a chain of lines that either go in the 4 or 8 directions (called 4-neighbors or 8-neighbors) in a counterclockwise fashion. Each direction is enumerated from 0 to 3 or 7, and a chain code is represented as a list of these directions.
 
 The derivative of the chain code is equivalent to the difference of the chain code at a position with its previous position modulo 4 or 8.
 
@@ -661,39 +690,43 @@ Applying rotation for chain coding is easily achieved by uniformly adding a rota
 
 For the area of an enclosed by a 4-neighbor chain code, it can be computed in the following manner:
 
+\begin{quote}
+
+For each element of the chain code in counterclockwise order, there are 4 cases for each element:
+
 \begin{itemize}
-  \itemsep0em
-  \begin{multicols}{2}
   \item Case 0: area = area - y
   \item Case 1: y = y + 1
   \item Case 2: area = area + y
   \item Case 3: y = y - 1
-  \end{multicols}
 \end{itemize}
 
-\subsection{Curvature Scale Space (CSS)}
+\end{quote}
 
-A curvature scale space (CSS) is a representation that identifies objects by inflection points (ie. zero crossings) on their contour. The location of the inflection points are expressed as a function of relative arclength. 
+\subsubsection{Curvature Scale Space (CSS)}
 
-The CSS of a contour is computed multiple times until no more inflection points are found. Each time after a gaussian kernel with increasing $\sigma$ is applied.
+A curvature scale space (CSS) is a representation that identifies objects by inflection points (ie. zero crossings) on their contour. The location of the inflection points are expressed as a function of the arclength of the contour. 
 
-With more filtering, weaker details are removed thus less inflection points left. The inflection points that last the longest often point toward the most prominent features.
+Additionally, The CSS of a contour is computed multiple times, each time after a gaussian filtering is applied to the arc-length function with increasing $\sigma$, until no more inflection points are found. 
+
+With more filtering, weaker details are preserved and as such less inflection points will be seen. The inflection points that last the longest often point toward the most prominent features.
 
 After computing CSS with all of the increasing $\sigma$, we obtain a graph that has many curves that grow upwards. The change in position in each curve as it grows upwards reflects the change of location of its inflection point as greater $\sigma$ is applied.
 
-This representation is scale invariant, rotation invariant, and robust to noise.
+The merit in this representation is that it is scale invariant (inflection points are parametrized by arc-length), rotation invariant (the CSS of a item and its rotated version are the same but rotated as well), and it is robust to noise due to multiple stages of filtering when constructing the model.
 
-\subsection{Shape Context Descriptor}
+\subsubsection{Shape Context Descriptor}
 
 A shape context descriptor is a compact representation where the template image (containing its boundaries) is separated into partitions (bins). The number of points that fall within each bin forms a distribution.
 
 To match an object with Shape Context Descriptors, solve for least cost assignment to get correspondences, and then use a template given by the correspondences.
 
-\subsection{Spatial Occupancy Array}
+\subsection{Region Representations}
+\subsubsection{Spatial Occupancy Array}
 
 This method is simple and results in a sparse array.
 
-\subsection{Axis-based Representations}
+\subsubsection{Axis-based Representations}
 
 This method involves putting images on a grid and figuring out which x values correspond with a specific y value of the image (vice versa for x-axis). 
 
@@ -701,32 +734,34 @@ The representation is a list of lists. Each list starts with the value at the pr
 
 This method is inefficient for specific cases and usually requires a combination of both X- and Y-axis representations.
 
-\subsection{Quad-trees}
+\subsubsection{Quad-trees}
 
-Using quad trees is a space efficient method where more detail is added where needed. It is a hierarchical but it depends on the chosen grid size. Quad tree representations also can't be easily shifted or scaled.
+Using quad trees is a space efficient method where more detail is added where needed. It is a hierarchical tree representation, but it depends on the chosen grid size. Quad tree representations also can't be easily shifted or scaled.
 
 A quad tree is a complete 4-ary tree where node is either a grey, white, or black pixel. Black pixels denote the region is contained, white pixels denote that it is not a region, and only grey pixels have children. 
 
 To form a Quad tree representation of a region, we can start at an intermediate level, and apply a split and merge technique. 
 
-For splitting, the node is colored grey, then it forms 4 children and colors each accordingly.
+For splitting, the representation takes a particular node and colors it grey. Then the node forms 4 children and colors each accordingly based on the region at that location. 
 
-For merging, the intersection of two quad trees is performed. Two nodes $R_1, R_2$ are taken as input. If either node is black or white, then that color is the resulting color (black has higher precedence than white). Else both nodes are grey pixels, then the intersection between all of their 4 children are computed in the same manner.
+For merging, the intersection of two quad trees is performed. Here we outline the procedure for intersecting two quad trees, which takes as input two nodes $R_1, R_2$ (starting as root nodes, this recursively applies to the whole tree). If either node is black or white, then that color is the resulting color. Note that black has higher precedence than white. Otherwise if both nodes are grey pixels, then the intersection between all of their 4 children are computed in the same manner.
 
-\subsection{Medial Axis Transform (MAT)}
+\subsubsection{Medial Axis Transform (MAT)}
 
 With a given boundary, a medial axis transform can effectively compute the skeleton of the region.
 
-For each point $p$, if there are more than one equidistant neighbors on the region boundary, it is a medial axis and as such part of the region's skeleton.
+The idea for how a representation works is that for each point p, if there are more than one equidistant neighbors on the region boundary, it is a medial axis and as such part of the region's skeleton.
 
-At each point $i$ in the region, find the largest disk centered at $i$ and only contained by the region. A point $p$ is maximal if its disk is not completely contained without another point $i$'s disk. The union of all the disks represents the object.
+The construction of such skeleton is as follows: At each point $i$ in the region, find the largest disk centered at $i$ and only contained by the region. A point $p$ is maximal if its disk is not completely contained without another point $i$'s disk. The union of all the disks represents the object.
 
 While generating skeletons of regions is very helpful, this method is noise sensitive.
 
 \subsection{Distance Measures}
 
+For different n-dimensinoal vectors, it is often useful to discuss the distance between those vectors. We outline some key distance measures:
+
 \begin{itemize}
-\itemsep0em
+
 \item $L_p$ distance
   
 In $L_p$ space, the distance between between two vectors $\mathbf{a}$ and $\mathbf{b}$ is defined as
@@ -739,7 +774,7 @@ where $\mathbf{x} = \mathbf{a} - \mathbf{b}$. If we are talking about a single v
 
 \item City Block distance (Manhattan)
 
-$L_p$ distance measure with $p=1$. Thus it is also called a $L1$ distance.
+The city block distance is a particular case of a $L_p$ distance measure with $p=1$. Thus it is also called a $L1$ distance.
 
 $$
 d_4(\vec p_1, \vec p_2) = | x_1 - x_2 | + | y_1 - y_2 |
@@ -747,7 +782,7 @@ $$
 
 \item Euclidean distance
 
-$L_p$ distance measure with $p=2$. Thus it is also called a $L2$ distance.
+The Euclidean distance is a particular case of a $L_p$ distance measure with $p=2$. Thus it is also called a $L2$ distance.
 
 $$
 d_e(\vec p_1, \vec p_2) = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}
@@ -761,16 +796,15 @@ $$
 d_8(\vec p_1, \vec p_2) = max\{| x_1 - x_2 |, | y_1 - y_2 |\}
 $$
 
-It is also called a chess board distance because it mimicks how a king piece moves on a chess board.
+It is also called a chess board because a distance of one is defined by any direction a king piece can move on a chess board.
 
 \end{itemize}
 
-\subsection{Error Measures}
+\subsection{Errors Measures}
 
 These error measures are commonly used and can also be used as loss functions. The following measures utilize a ground truth vector $\mathbf{y}$ and a prediction vector $\mathbf{\hat y}$
 
 \begin{itemize}
-\itemsep0em
 \item Mean Square Error (MSE)
 
 $$
@@ -804,12 +838,10 @@ Token similarity is defined by a feature vector, which is the distance between p
 K-mean clustering is a method of classification of points in a feature space. effectively finding clusters of points. Given an input $K$ for the amount of clusters that should be found, the algorithm is as follows:
 
 \begin{enumerate}
-\itemsep0em
 \item Partition the $N$ points in the feature space into $K$ intial sets. Calculate the initial set centroids $m_1, ..., m_k$.
 
 \item While $m_1, ..., m_k$ has not stabilized, do:
 \begin{enumerate}
-\itemsep0em
 \item {Assign each of the $N$ points to their nearest $m_i$, making sure that no cluster is empty}
 \item {Recompute mean $m_i$ of each cluster}
 \end{enumerate}
@@ -837,9 +869,9 @@ The estimate $x$ is now set as $m(x)$, and this process continues until converge
 
 \subsubsection{Applications}
 
-For Image Segmentation, the feature space is the Space-Range domain: space is the coordinate of each pixel, range is the grayscale or color vector of the pixel.
+Mean Shift can be used for Edge Preserving Smoothing and Image Segmentation. 
 
-The kernel function would be the product $K_s(x_i^s - x^s) \cdot K_s(x_i^r - x^r)$, one for space and one for range.
+For Image Segmentation, the initial x's can be some random pixels from the grid. The feature space is the Space-Range domain, where space is the coordinates of each pixel, and range is the grayscale or color vector of the pixel. The kernel function would be the product of the two kernel functions $K_s(x_i^s - x^s) \cdot K_s(x_i^r - x^r)$ for each part of the domain, one for space and one for range.
 
 After Mean Shift filtering, modes can be merged if they are closer than $h_s$ in the Space domain and $h_r$ in the Range domain. We can also merge regions that are too small.
 
@@ -854,11 +886,10 @@ $$
 The function $w(m, n)$ is called a generating kernel (which is usually a matrix), and it has to satisfy the followng constraints:
 
 \begin{enumerate}
-\itemsep0em
-\item {Separable: $w(m,n) = \hat{w}(m)\hat{w}(n)$}
-\item {Normalized: $\sum \hat{w}(m) = 1$}
-\item {Symmetric: $\hat{w}(m) = \hat{w}(-m)$}
-\item {Equal Contribution: $a+2c = 2b$}
+  \item {Separable: $w(m,n) = \hat{w}(m)\hat{w}(n)$}
+  \item {Normalized: $\sum \hat{w}(m) = 1$}
+  \item {Symmetric: $\hat{w}(m) = \hat{w}(-m)$}
+  \item {Equal Contribution: $a+2c = 2b$}
 \end{enumerate}
 
 After combining the second and fourth constraints, we have the following:
@@ -889,80 +920,87 @@ With a series of Gaussian Pyramid images, the corresponding laplacian pyramid im
 
 For values $l$ from 0 to $N$, the laplacian pyramid image $L_l$ is defined as $G_l - G_{l+1,1}$, with $L_N = G_N$. In essence, each laplacian pyramid image is a difference of Gaussian pyramid images.
 
-An important feature of the Laplacian pyramid is that the original image can be found by summing up pyramid levels. That is:$G_0 = \sum_{l=0}^{N}L_{ll}$
+An important feature of the Laplacian pyramid is that the original image can be found by summing up pyramid levels. That is:
+
+$$
+G_0 = \sum_{l=0}^{N}L_{ll}
+$$
 
 Due to the fact that laplacian images have this property, and each EXPAND operation effectively subtracts an average of neighboring values, the image data is compressed with the pixel to pixel correlation removed and values shifted toward zero. This effectively reduces the information intropy of each image and thus reduces transmission bandwidths.
 
 \section{Representations of 3D Structures}
-\subsection{Winged-Edge}
+\subsection{Surface Representations}
+\subsubsection{Polyhedral Surfaces}
 
-The winged-edge is polyhedral surface representation. It uses nodes which are of one of the following types:
+The winged-edged representation includes the following:
 
 \begin{itemize}
-\itemsep0em
-\item face: face characteristics (surface, normal, reflectance, color, etc.)
-\item edge: topological information for faces, edges, and vertices, as well as additional information
-\item vertex: 3D vertex location
+  \item {face node: face characteristics (surface, normal, reflectance, color, etc.)}
+  \item {edge node: topological information for faces, edges, and vertices, as well as additional information}
+  \item {vertex node: 3D vertex location}
 \end{itemize}
 
-From those nodes, a graph connecting them is created. One property to note with this representation is that it has to satisfy Euler's theorem $|V|-|E|+|F|=2$.
+The Theorem of Euler states that for every polyhedron, V-E+F=2, where V is the number of vertices, E is the number of edges, and F is the number of faces.
 
-\subsection{Some polyhedral representations}
+Also, there are B-splines, point clouds, and 3D (polygonal) meshes.
 
-Other polyhedral surface representations include B-splines, point clouds, and 3D (polygonal) meshes.
+\vspace{2mm}
 
-\subsection{Shape Distribution}
+For shape distribution, there are 3 steps.
+\begin{enumerate}
+  \item {Distance is measured between two random points on the surface}
+  \item {A 1D histogram is generated to count the number of pairs at different distances}
+  \item {The histogram is normalized in the end}
+\end{enumerate}
 
-A shape distribution of a 3D surface gives a 1D profile of itself by randomly sampling pairs of points on the surface and recording occurences of the distances in a histogram. The histogram is normalized into a distribution afterwards.
+To spin an image, there are 3 steps.
+\begin{enumerate}
+  \item {For each vertex, an object centered coordinate ($\alpha, \beta$) is computed based on the distance $\alpha$ along the axis and the distance $\beta$ from the axis}
+  \item {A 2D accumulator array is created, and is incremented for each vertex that can be supported by the spin image}
+  \item {The final histogram is normalized}
+\end{enumerate}
 
-\subsection{Spin Image}
+\subsubsection{Generalized Cylinders (GC)}
 
-A spin image of a 3D surface gives a 2D profile of itself by rotating a plane around the surface's principal axis. At each angle, the set of points that touch the plane are recorded into a 2D histogram. The histogram is normalized into a distribution afterwards.
+A Generalized Cylinder (GC) has a planar cross section, a space curve spine, and a sweep rule (constant, linear contraction, etc.).
 
-\subsection{Generalized Cylinders/Cones}
+In other words, a GC has a spine that defines the axis of the cylinder and has a cross section that is swept along that axis by a sweep rule.
 
-A Generalized Cylinder is a surface representation which defines a spine which circles grow from. It has a planar cross section, a space curve spine, and a sweep rule (constant, linear contraction, etc.).
+\subsection{Volumetric Representations}
+\subsubsection{Spatial Occupancy Array}
 
+Voxels are the simplest representation, but are very wasteful. They can use sparse arrays, and one of the dimensions can be run-length coded.
 
-\subsection{Spatial Occupancy Array}
+\subsubsection{Octree}
 
-This volumetric representation uses voxels, which are the simplest representation, but they are very wasteful. They can use sparse arrays, and one of the dimensions can be run-length coded.
+Octrees are the 3D version of quadtrees, where each node has exactly 8 children. When given a $2^n \cdot 2^n \cdot 2^n$ array of voxels, the dimension of the array is $2^n$. A node at level i for an octree that has an array with dimension of $2^n$ corresponds to an element which contains $2^i \cdot 2^i \cdot 2^i$ voxels.
 
-\subsection{Octree}
+"Void" = "white", "Full" = "black", "Mixed" = "gray", if we were to match the values in a quadtree to those in an octree.
 
-Octrees are the 3D version of quadtrees which volumetrically represent objects. Many of its properties inherit from quadtrees. Each node has exactly 8 children (complete 8-ary tree), and each node is said to be void (white), full (black), or mixed (grey). Quad tree operations such as union, intersection, and complement of can be solved in similar method for octrees.
-When given a $2^n \times 2^n \times 2^n$ array of voxels, the dimension of the array is said to be $2^n$. A node at level $i$ for an octree corresponds to an element which contains $2^i \times 2^i \times 2^i$ voxels.
+Union, intersection, and complement of octrees can be solved recursively.
 
-\subsection{Constructive Solid Geometry}
+\subsubsection{Constructive Solid Geometry}
 
-Constructive Solid Geometry (CSG) schemes are volumetric representations that represent volumes as compositions of other primitive solids via set operations. Primitives such as arbitrarily scaled rectangular prisms, cylinders, cones, and spheres are used. A CSG representation is an expression that follows the following form:
+Solids are represented as compositions of other solids via set operations. Primitive solids are entities such as arbitrarily scaled rectangular blocks, cylinders, cones, and spheres of arbitrary radius.
 
-\[
-\begin{aligned}  
-  <\mathtt{CSG}\; rep> ::= & <\mathtt{primitive}> | \\
-  &\mathtt{MOVE} <\mathtt{CSG}\; rep> \mathtt{BY} <\mathtt{params}> | \\
-  & <\mathtt{CSG}\; rep> <\mathtt{op}> <\mathtt{CSG}\; rep>
-\end{aligned}
-\]
+A CSG representation involves primitive solids and set operators for combination and motion.
 
-The set operations are best taken to be their regularized version. In short, this means that set operations on solids should leave them with "tight skins", so no dangling surfaces or edges. Regularized operators are defined by
+$<CSG Rep> ::== <primitive solid> | MOVE <CSG Rep> BY <Motion Params> | <CSG Rep> <Combine Op> <CSG Rep>$
 
-$$
-X <OP> * Y =  r(X <OP> Y)
-$$
+Regularity is an important property of any set of points that models a solid. In a space, a set X is regular if X = kiX, where k and i are the closure and interior operators. This means that a regular set has no isolated or dangling boundary points.
+
+Regularized operators are
+$X <OP> * Y =  r(X <OP> Y)$
 
 If primitives are unbounded, then it is difficult to check for the boundedness of an object. However, if they are bounded, then any CSG representation is a valid volume representation.
 
-\subsection{Shape Histogram}
-
-The shape histogram is a volumetric representation that provides a 3D profile of a 3D object. It is constructed in the following manner:
+\subsubsection{Shape Histogram}
 
 \begin{enumerate}
-\itemsep0em
-\item A volumetric representation is created by filling in the surface with voxels
-\item The space is transformed to a spherical coordinate $(r, \phi, \theta )$ system around the center of mass of the model
-\item A 3D spherical histogram is constructed for accumulating voxels in the volume representation
-\item The histogram is normalized
+  \item {Build the volumetric representation by converting the surface into a set of voxels}
+  \item {The space is transformed to a spherical coordinate system around the center of mass of the model}
+  \item {A 3D spherical histogram is constructed for accumulating voxels in the volume representation}
+  \item {The histogram is normalized}
 \end{enumerate}
 
 \subsection{Viewer-Centered Representation}
