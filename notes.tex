@@ -255,7 +255,7 @@ Similarity between $M \times N$ image $f$ and a $k \times s$ template $t$ can be
 
 If a perfect match is found at $(x',y')$, then $d^2(x',y') = 0$.
 
-Our goal is to minimize $d^2(x,y)$. $f(x+k,y+s)^2$ is independent from t, and $t(k,s)^2$ is a constant. Therefore we only need to focus on maximizing $\sum_{k,s}f(x+k,y+s)t(k,s)$ to minimize $d^2(x,y)$, which is in effect looking for minimas in a cross-correlation.
+Our goal is to minimize $d^2(x,y)$. $f(x+k,y+s)^2$ is independent from t, and $t(k,s)^2$ is a constant. Therefore we only need to focus on maximizing $\sum_{k,s}f(x+k,y+s)t(k,s)$ to minimize $d^2(x,y)$, which is in effect looking for maximas in a cross-correlation.
 
 \section{Edge Detection}
 
@@ -268,7 +268,7 @@ In this category of methods, the image gradient is computed in one way or anothe
 \[
 \begin{aligned}
   \frac{\partial f}{\partial x} = f(x+n, y) - f(x,y) \;& \;\frac{\partial f}{\partial y} = f(x, y+n) - f(x,y)\\
-  S = \sqrt{\left(\frac{\partial f}{\partial x}\right)^2 + \left(\frac{\partial f}{\partial y}\right)^2} \;&\; \theta = \arctan\left(\frac{\partial f}{\partial x} \middle/ \frac{\partial f}{\partial y}\right)
+  S = \sqrt{\left(\frac{\partial f}{\partial x}\right)^2 + \left(\frac{\partial f}{\partial y}\right)^2} \;&\; \theta = \arctan\left(\frac{\partial f}{\partial y} \middle/ \frac{\partial f}{\partial x}\right)
 \end{aligned}
 \]
 
@@ -484,7 +484,7 @@ Entropy is the level of randomness in the data that is being processed. Entropy 
 
 \item Energy:  $\sum_{i,j} P[i,j]^2$
 
-Energy simply defined as the sum of all of the matrix values combined
+Energy simply defined as the sum of all of the matrix values squared
 
 \item Contrast: $\sum_{i,j} (i-j)^2 P[i,j]$
 
@@ -677,7 +677,7 @@ Applying rotation on for a polyline representation requires applying a rotation 
 For a closed polyline representation of a contour, its area is defined as
 
 $$
-\frac{1}{2}\sum_{i=0}^{n-1}(x_{i+1}y_i + x_iy_{i+1})
+\frac{1}{2}\sum_{i=0}^{n-1}(x_{i+1}y_i - x_iy_{i+1})
 $$
 
 \subsubsection{Chain Code}
@@ -744,7 +744,7 @@ To form a Quad tree representation of a region, we can start at an intermediate 
 
 For splitting, the representation takes a particular node and colors it grey. Then the node forms 4 children and colors each accordingly based on the region at that location. 
 
-For merging, the intersection of two quad trees is performed. Here we outline the procedure for intersecting two quad trees, which takes as input two nodes $R_1, R_2$ (starting as root nodes, this recursively applies to the whole tree). If either node is black or white, then that color is the resulting color. Note that black has higher precedence than white. Otherwise if both nodes are grey pixels, then the intersection between all of their 4 children are computed in the same manner.
+For merging, the intersection of two quad trees is performed. Here we outline the procedure for intersecting two quad trees, which takes as input two nodes $R_1, R_2$ (starting as root nodes, this recursively applies to the whole tree). If either node is white, then that color is white. If either is black, return the other node. Note that black has higher precedence than white. Otherwise if both nodes are grey pixels, then the intersection between all of their 4 children are computed in the same manner.
 
 \subsubsection{Medial Axis Transform (MAT)}
 
@@ -752,7 +752,7 @@ With a given boundary, a medial axis transform can effectively compute the skele
 
 The idea for how a representation works is that for each point p, if there are more than one equidistant neighbors on the region boundary, it is a medial axis and as such part of the region's skeleton.
 
-The construction of such skeleton is as follows: At each point $i$ in the region, find the largest disk centered at $i$ and only contained by the region. A point $p$ is maximal if its disk is not completely contained without another point $i$'s disk. The union of all the disks represents the object.
+The construction of such skeleton is as follows: At each point $i$ in the region, find the largest disk centered at $i$ and only contained by the region. A point $p$ is maximal if its disk is not completely contained within another point $i$'s disk. The union of all the disks represents the object.
 
 While generating skeletons of regions is very helpful, this method is noise sensitive.
 
